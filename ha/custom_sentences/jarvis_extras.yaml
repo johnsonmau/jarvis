@@ -5,7 +5,22 @@
 # "cancel the timer") and media ("pause", "resume", "next track", "set volume
 # to 50 percent" for the office speaker), so they are not repeated here.
 language: "en"
+# Ignored during matching, so "hey Jarvis, turn off the TV" said inside a
+# follow-up window (no wake-word detection, phrase ends up in the transcript)
+# still matches the intent.
+skip_words:
+  - "hey jarvis"
+  - "jarvis"
+  - "please"
 lists:
+  pre:
+    values:
+      - in: "[(can|could|would|will) you] [please] [jarvis]"
+        out: ""
+  post:
+    values:
+      - in: "[please] [now] [jarvis]"
+        out: ""
   level:
     range:
       from: 0
@@ -39,30 +54,30 @@ intents:
   JarvisVolumeUp:
     data:
       - sentences:
-          - "[a (bit|little)] louder [please]"
-          - "speak (up|louder)"
-          - "(turn|bring) (yourself|your volume|your voice) up [a (bit|little)]"
-          - "(raise|increase) your (volume|voice) [a (bit|little)]"
-          - "[your] volume up"
+          - "{pre} [a (bit|little)] louder {post}"
+          - "{pre} speak (up|louder) {post}"
+          - "{pre} (turn|bring) (yourself|your volume|your voice) up [a (bit|little)] {post}"
+          - "{pre} (raise|increase|boost) your (volume|voice) [a (bit|little)] {post}"
+          - "{pre} [your] volume up {post}"
           - "I can't hear you"
           - "(you're|you are) [being] too quiet"
   JarvisVolumeDown:
     data:
       - sentences:
-          - "[a (bit|little)] (quieter|softer) [please]"
-          - "not so loud"
-          - "(turn|bring) (yourself|your volume|your voice) down [a (bit|little)]"
-          - "(lower|reduce|decrease) your (volume|voice) [a (bit|little) [bit]]"
-          - "[your] volume down"
-          - "keep it down"
+          - "{pre} [a (bit|little)] (quieter|softer) {post}"
+          - "{pre} not so loud {post}"
+          - "{pre} (turn|bring) (yourself|your volume|your voice) down [a (bit|little)] {post}"
+          - "{pre} (lower|reduce|decrease|drop) your (volume|voice) [a (bit|little) [bit]] {post}"
+          - "{pre} [your] volume down {post}"
+          - "{pre} keep it down {post}"
           - "(you're|you are) [being] too loud"
-          - "speak (quieter|softer|more quietly)"
+          - "{pre} speak (quieter|softer|more quietly) {post}"
   JarvisVolumeSet:
     data:
       - sentences:
-          - "set your volume to {level} [percent]"
-          - "[put] your volume (at|to) {level} [percent]"
-          - "speak at {level} percent"
+          - "{pre} set your volume to {level} [percent] {post}"
+          - "{pre} [put] your volume (at|to) {level} [percent] {post}"
+          - "{pre} speak at {level} percent {post}"
   JarvisVolumeGet:
     data:
       - sentences:

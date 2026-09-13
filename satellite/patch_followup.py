@@ -2,10 +2,10 @@
 """Follow-up listening for wyoming-satellite v1.4.1 (applied at image build).
 
 After Jarvis finishes a spoken reply, keep the pipeline open for a few seconds
-so the next sentence works without the wake word. While that window is open
-the microphone is also still fed to the wake-word service, so "hey Jarvis"
-keeps working. If nobody speaks, the window closes and the satellite goes back
-to waiting for the wake word. Enabled with --follow-up-seconds N (0 = off).
+so the next sentence works without the wake word. Saying "hey Jarvis ..." inside
+the window is fine too: the phrase lands in the transcript and Home Assistant's
+skip_words remove it before intent matching. If nobody speaks, the window
+closes and the satellite goes back to waiting for the wake word. Enabled with --follow-up-seconds N (0 = off).
 """
 import sys, re
 root = sys.argv[1] if len(sys.argv) > 1 else "/app"
@@ -152,11 +152,10 @@ patch(f"{root}/wyoming_satellite/satellite.py", [
             return
 ''',
 '''        if self.is_streaming:
-            # Forward to server
+            # Forward to server (during a follow-up window too: "hey Jarvis ..." said
+            # inside the window simply arrives in the transcript; Home Assistant's
+            # skip_words drop the wake phrase before intent matching)
             await self.event_to_server(event)
-            if self._follow_up:
-                # ...and keep the wake word service listening during the follow-up window
-                await self.event_to_wake(event)
         else:
             # Forward to wake word service
             await self.event_to_wake(event)
@@ -216,16 +215,8 @@ patch(f"{root}/wyoming_satellite/satellite.py", [
             self._wake_info_ready.set()
             return
 
-        if self.server_id is None:
-            return
-
-        if self.is_streaming and self._follow_up and Detection.is_type(event.type):
-            # Wake word inside the follow-up window: start a fresh request
-            _LOGGER.debug("Follow-up: wake word heard, restarting pipeline")
-            self._cancel_follow_up_timer()
-            await self._end_follow_up()
-        elif self.is_streaming:
-            # Not detecting
+        if self.is_streaming or (self.server_id is None):
+            # Not detecting or no server connected
             return
 '''),
 ])

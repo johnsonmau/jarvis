@@ -1,9 +1,5 @@
 # Local voice services
 
-![The Jarvis face on the office display: iris skin, dusk background, idle](docs/face-iris.png)
-
-*Jarvis on the 7" display (iris skin, dusk background). Face source: `face/`.*
-
 Part A of the satellite build. Start these, add them to Home Assistant, then
 point Home Assistant at the board.
 
@@ -284,10 +280,13 @@ copy). To push to Gitea: create an empty repo there, then
 conversation when an LLM reply ends with a question, never after an intent, so
 the satellite does it itself: `satellite/patch_followup.py` is applied to
 wyoming-satellite at image build (Dockerfile) and adds `--follow-up-seconds N`
-(6 in docker-compose.yml). After Jarvis finishes a spoken reply he keeps the
-pipeline open for N seconds; say the next thing without "hey Jarvis". The mic
-also still feeds the wake-word service during that window, so "hey Jarvis"
-keeps working. Silence for N seconds -> back to wake word (the log says
+(8 in docker-compose.yml). After Jarvis finishes a spoken reply he keeps the
+pipeline open for N seconds; say the next thing without "hey Jarvis". Saying
+"hey Jarvis ..." inside the window is fine too: the phrase lands in the
+transcript and skip_words in custom_sentences/en/jarvis_extras.yaml drop it
+before intent matching (an earlier version restarted the pipeline on the wake
+word instead, which raced Home Assistant and left him listening in silence).
+Silence for N seconds -> back to wake word (the log says
 "Follow-up: no speech, back to wake word"). Announcements (reminders, burps)
 do not open a window; only real replies do. Set to 0 to disable. Rebuild after
 changing the patch: `docker compose build satellite && docker compose up -d satellite`.
