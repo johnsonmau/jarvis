@@ -1,0 +1,36 @@
+# Override Home Assistant's stock "is the X open?" answer.
+#
+# The built-in one_yesno response is:  No, {{ state.state_with_unit }}
+# which prints the raw binary_sensor state, so a closed door is "No, off".
+# This maps the state to the words the device class implies.
+#
+# Install at <config>/custom_sentences/en/responses.yaml, then run the
+# conversation.reload action (or restart Home Assistant).
+language: "en"
+responses:
+  intents:
+    HassGetState:
+      one_yesno: >
+        {% set dc = state.attributes.get('device_class') %}
+        {% set words = {
+          'door':        ['open', 'closed'],
+          'garage_door': ['open', 'closed'],
+          'window':      ['open', 'closed'],
+          'opening':     ['open', 'closed'],
+          'lock':        ['unlocked', 'locked'],
+          'motion':      ['detecting motion', 'clear'],
+          'occupancy':   ['occupied', 'clear'],
+          'moisture':    ['wet', 'dry'],
+          'battery':     ['low', 'fine'],
+          'connectivity':['connected', 'disconnected'],
+          'plug':        ['plugged in', 'unplugged'],
+          'presence':    ['home', 'away'],
+          'smoke':       ['detecting smoke', 'clear'],
+          'problem':     ['reporting a problem', 'ok']
+        } %}
+        {% if state.domain == 'binary_sensor' and dc in words %}
+          {% set word = words[dc][0] if state.state == 'on' else words[dc][1] %}
+        {% else %}
+          {% set word = state.state_with_unit %}
+        {% endif %}
+        {{ 'Yes' if query.matched else 'No' }}, the {{ state.name | lower }} is {{ word }}

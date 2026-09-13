@@ -1,0 +1,45 @@
+# Voice control of Alarmo: arm away, arm home, disarm, status. Handlers live in
+# intent_scripts.yaml and use alarm_code from secrets.yaml. Custom sentences
+# win over the built-in ones, which matters here because "turn on the alarm"
+# would otherwise hit the generic turn_on intent that the alarm can't do.
+# Reload with conversation.reload.
+language: "en"
+intents:
+  AlarmArmAway:
+    data:
+      - sentences:
+          - "arm [the] (alarm|house|security system|system) [(in|to|for)] away [mode]"
+          - "(set|turn|switch|put) [the] (alarm|security system) [on] [(to|in)] away [mode]"
+          - "(turn|switch) on [the] (alarm|security system) [(in|to)] away [mode]"
+          - "arm away"
+          - "away mode"
+          - "(we're|we are|i'm|i am) leaving [now]"
+  AlarmArmHome:
+    data:
+      - sentences:
+          - "arm [the] (alarm|house|security system|system) [(in|to|for)] (home|stay|night) [mode]"
+          - "(set|turn|switch|put) [the] (alarm|security system) [on] [(to|in)] (home|stay|night) [mode]"
+          - "(turn|switch) on [the] (alarm|security system) [(in|to)] (home|stay|night) [mode]"
+          - "arm (home|stay)"
+          - "(home|stay|night) mode"
+          - "arm [the] (alarm|house|security system|system)"
+          - "(turn|switch) [the] (alarm|security system) on"
+          - "(turn|switch) on [the] (alarm|security system)"
+          - "(alarm|security system) on"
+          - "arm the alarm for the night"
+  AlarmDisarm:
+    data:
+      - sentences:
+          - "disarm [the] (alarm|house|security system|system)"
+          - "(turn|switch) [the] (alarm|security system) off"
+          - "(turn|switch) off [the] (alarm|security system)"
+          - "(alarm|security system) off"
+          - "disarm"
+          - "(i'm|i am|we're|we are) (home|back)"
+  AlarmStatus:
+    data:
+      - sentences:
+          - "is the alarm (armed|on|set|active)"
+          - "is the alarm (disarmed|off)"
+          - "(what's|what is) the alarm (status|state)"
+          - "is the (house|security system) armed"

@@ -1,0 +1,159 @@
+garage_script:
+  alias: Garage Script
+  sequence:
+  - service: rest_command.garage_api
+    data: {}
+  description: ''
+  icon: mdi:garage-variant
+jarvis_sfx:
+  alias: Jarvis SFX
+  mode: single
+  icon: mdi:emoticon-wink
+  description: Play one of Jarvis's sounds on the satellite with a face gesture and
+    an optional remark. Unless force is true it only runs when cheeky mode is on,
+    the satellite is idle, the alarm is disarmed or armed home, the last sound was
+    45+ min ago and someone seems home.
+  fields:
+    sound:
+      description: file base name in /config/www/jarvis, empty for none
+      example: burp1
+    gesture:
+      description: face gesture (yawn, burp, sigh, laugh, eyeroll, sleepy, snore,
+        sneeze, hum, look, morning)
+      example: burp
+    remark:
+      description: spoken after the sound
+      example: Excuse me.
+    gesture_seconds:
+      description: seconds the gesture stays (sleepy stays until cleared)
+      example: 3
+    counter:
+      description: counter entity to bump on success
+      example: counter.jarvis_burps
+    force:
+      description: skip the gates
+      example: false
+  sequence:
+  - variables:
+      force: '{{ force | default(false) }}'
+      sound: '{{ sound | default('''') }}'
+      gesture: '{{ gesture | default('''') }}'
+      remark: '{{ remark | default('''') }}'
+      gesture_seconds: '{{ gesture_seconds | default(3) }}'
+      counter: '{{ counter | default('''') }}'
+  - condition: template
+    value_template: '{{ force or (is_state(''input_boolean.jarvis_cheeky'',''on'')
+      and is_state(''assist_satellite.usb_mic'',''idle'') and states(''alarm_control_panel.alarmo'')
+      in [''disarmed'',''armed_home''] and (now() - states.input_datetime.jarvis_last_sound.last_changed).total_seconds()
+      > 2700 and (is_state(''binary_sensor.living_room_motion_occupancy'',''on'')
+      or (now() - states.binary_sensor.living_room_motion_occupancy.last_changed).total_seconds()
+      < 1800 or (now() - states.binary_sensor.front_door_sensor_contact.last_changed).total_seconds()
+      < 1800 or (now() - states.assist_satellite.usb_mic.last_changed).total_seconds()
+      < 1800 or states(''media_player.living_room_tv'') in [''playing'',''on'',''paused'']))
+      }}'
+  - if:
+    - condition: template
+      value_template: '{{ gesture != '''' }}'
+    then:
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_gesture
+      data:
+        value: '{{ gesture }}'
+  - if:
+    - condition: template
+      value_template: '{{ sound != '''' }}'
+    then:
+    - action: assist_satellite.announce
+      target:
+        entity_id: assist_satellite.usb_mic
+      data:
+        media_id: http://192.168.0.229:8123/local/jarvis/{{ sound }}.wav
+  - if:
+    - condition: template
+      value_template: '{{ remark != '''' }}'
+    then:
+    - action: assist_satellite.announce
+      target:
+        entity_id: assist_satellite.usb_mic
+      data:
+        message: '{{ remark }}'
+  - action: input_datetime.set_datetime
+    target:
+      entity_id: input_datetime.jarvis_last_sound
+    data:
+      datetime: '{{ now().strftime(''%Y-%m-%d %H:%M:%S'') }}'
+  - if:
+    - condition: template
+      value_template: '{{ counter != '''' }}'
+    then:
+    - action: counter.increment
+      target:
+        entity_id: '{{ counter }}'
+  - if:
+    - condition: template
+      value_template: '{{ gesture not in ['''', ''sleepy''] }}'
+    then:
+    - delay:
+        seconds: '{{ gesture_seconds | int }}'
+    - if:
+      - condition: template
+        value_template: '{{ is_state(''input_text.jarvis_gesture'', gesture) }}'
+      then:
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.jarvis_gesture
+        data:
+          value: ''
+jarvis_laugh_later:
+  alias: Jarvis laugh later
+  mode: restart
+  icon: mdi:emoticon-lol-outline
+  description: Laugh after a joke, once the TTS has had time to finish.
+  fields:
+    words:
+      example: 15
+  sequence:
+  - delay:
+      seconds: '{{ ((words | default(12) | int) / 2.5 + 1.5) | round(0) | int }}'
+  - action: script.jarvis_sfx
+    data:
+      sound: '{{ [''chuckle'',''chuckle'',''laugh''] | random }}'
+      gesture: laugh
+      gesture_seconds: 3
+      force: true
+jarvis_cheeky_resume_later:
+  alias: Jarvis cheeky resume later
+  mode: restart
+  icon: mdi:timer-outline
+  description: Turns cheeky mode back on an hour after 'be quiet'.
+  sequence:
+  - delay:
+      hours: 1
+  - action: input_boolean.turn_on
+    target:
+      entity_id: input_boolean.jarvis_cheeky
+jarvis_reminder:
+  alias: Jarvis reminder
+  mode: parallel
+  max: 10
+  icon: mdi:bell-ring-outline
+  description: "Wait, then announce a reminder on the satellite. Called by the JarvisRemind intent."
+  fields:
+    task:
+      example: move the laundry
+    seconds:
+      example: 600
+  sequence:
+    - delay:
+        seconds: "{{ seconds | int }}"
+    - action: assist_satellite.announce
+      target:
+        entity_id: assist_satellite.usb_mic
+      data:
+        message: "Reminder: {{ task }}."
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_gesture
+      data:
+        value: look

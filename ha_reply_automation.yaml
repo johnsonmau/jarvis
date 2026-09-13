@@ -1,0 +1,28 @@
+# Speak the T5AI satellite's replies on MPD instead of the board's speaker.
+#
+# The USB-mic satellite (satellite/reply.py) POSTs {"text": "..."} to this
+# webhook for every reply, as the T5AI board did before it. Home
+# Assistant synthesises it with Piper and plays it on the media player below.
+#
+# Add it: Settings > Automations & scenes > Create automation > (three dots)
+# Edit in YAML > paste everything below > Save.
+alias: "T5AI reply -> MPD"
+description: "Play the voice satellite's spoken reply on Music Player Daemon"
+mode: queued
+triggers:
+  - trigger: webhook
+    webhook_id: t5ai_reply
+    allowed_methods:
+      - POST
+    local_only: true
+conditions:
+  - condition: template
+    value_template: "{{ trigger.json.text is defined and trigger.json.text | trim != '' }}"
+actions:
+  - action: tts.speak
+    target:
+      entity_id: tts.piper
+    data:
+      media_player_entity_id: media_player.music_player_daemon
+      message: "{{ trigger.json.text }}"
+      cache: true

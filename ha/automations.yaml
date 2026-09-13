@@ -1,0 +1,1362 @@
+- id: '1727141782555'
+  alias: Living room lamps - on
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_on
+    device_id: 1cc497c565c722e549cfdf098b9f6453
+    entity_id: eb06b3b852f5341ad32adc8ad1a37799
+    domain: light
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Living room lamps have been turned on.
+  mode: single
+- id: '1727141833871'
+  alias: Living room lamps - off
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_off
+    device_id: 1cc497c565c722e549cfdf098b9f6453
+    entity_id: eb06b3b852f5341ad32adc8ad1a37799
+    domain: light
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Living room lamps have been turned off.
+  mode: single
+- id: '1727178463117'
+  alias: Pi hole - ad block
+  description: ''
+  trigger:
+  - type: value
+    platform: device
+    device_id: 8366165728ebac4d1dcb74b94dcfffb1
+    entity_id: 097069e687673b962640a50b075a7f89
+    domain: sensor
+    above: 0
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Pi-hole blocked an advertisement on your network.
+  mode: single
+- id: '1727189627076'
+  alias: Front Door - Open
+  description: ''
+  triggers:
+  - type: opened
+    device_id: 60cae8d2ea20a6d54606c77a41ab9c81
+    entity_id: a85a38bd656b9cf08e4dc467afc1ddde
+    domain: binary_sensor
+    trigger: device
+  conditions:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_disarmed
+  actions:
+  - metadata: {}
+    data:
+      message: Front door has been opened!
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/front-door-open.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: front-door-open.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1727189675431'
+  alias: Front Door - closed
+  description: ''
+  trigger:
+  - type: not_opened
+    platform: device
+    device_id: 60cae8d2ea20a6d54606c77a41ab9c81
+    entity_id: a85a38bd656b9cf08e4dc467afc1ddde
+    domain: binary_sensor
+  condition:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_disarmed
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Front door has been closed.
+  mode: single
+- id: '1727189738311'
+  alias: Living room - motion detected
+  description: ''
+  trigger:
+  - type: occupied
+    platform: device
+    device_id: 9aeefee0b5f513c9333bbfc54fc2a863
+    entity_id: f425953d1b091f34418e3913bd3f1892
+    domain: binary_sensor
+  condition:
+  - condition: or
+    conditions:
+    - condition: device
+      device_id: b13c93cfd52804c82936180f0b540335
+      domain: alarm_control_panel
+      entity_id: 88369ac959d8646a0102e698481c5f5c
+      type: is_armed_away
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Motion has been detected in your living room!
+  mode: single
+- id: '1727189786796'
+  alias: Living Room - no more motion
+  description: ''
+  trigger:
+  - type: not_occupied
+    platform: device
+    device_id: 9aeefee0b5f513c9333bbfc54fc2a863
+    entity_id: f425953d1b091f34418e3913bd3f1892
+    domain: binary_sensor
+  condition:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_armed_away
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Motion no longer detected in your living room.
+  mode: single
+- id: '1727218738928'
+  alias: office lamp - off
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_off
+    device_id: 6aac940b8829ae16239052aec521d553
+    entity_id: 6cf64f0f733b615e5b9d1b3c69aebdbd
+    domain: light
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Office lamp has been turned off.
+  mode: single
+- id: '1727218786554'
+  alias: office lamp - on
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_on
+    device_id: 6aac940b8829ae16239052aec521d553
+    entity_id: 6cf64f0f733b615e5b9d1b3c69aebdbd
+    domain: light
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Office lamp has been turned on.
+  mode: single
+- id: '1727312702410'
+  alias: Garage door - closed
+  description: ''
+  trigger:
+  - type: not_opened
+    platform: device
+    device_id: e120d2ebfeb5fa705aafba6b7363c0b5
+    entity_id: 83254eb07c73c487c5dbf74c385d686c
+    domain: binary_sensor
+  condition:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_disarmed
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Garage door has been closed.
+  mode: single
+- id: '1727312744351'
+  alias: Garage door - open
+  description: ''
+  triggers:
+  - type: opened
+    device_id: e120d2ebfeb5fa705aafba6b7363c0b5
+    entity_id: 83254eb07c73c487c5dbf74c385d686c
+    domain: binary_sensor
+    trigger: device
+  conditions:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_disarmed
+  actions:
+  - metadata: {}
+    data:
+      message: Garage door has been opened!
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/garage-door-open.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: garage-door-open.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1727313270071'
+  alias: Laundry room - open
+  description: ''
+  triggers:
+  - type: opened
+    device_id: 056dcba2cd555aa99e8dc2e010a7d7cd
+    entity_id: 37bcf63e6c7f6631f44cb81bce1d2bb7
+    domain: binary_sensor
+    trigger: device
+  conditions:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_disarmed
+  actions:
+  - metadata: {}
+    data:
+      message: Laundry room door has been opened!
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/laundry-room-door-open.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: laundry-room-door-open.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1727313405281'
+  alias: Laundry room - closed
+  description: ''
+  triggers:
+  - type: not_opened
+    device_id: 056dcba2cd555aa99e8dc2e010a7d7cd
+    entity_id: 37bcf63e6c7f6631f44cb81bce1d2bb7
+    domain: binary_sensor
+    trigger: device
+  conditions:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_disarmed
+  actions:
+  - metadata: {}
+    data:
+      message: Laundry room door has been closed.
+    action: notify.mobile_app_jrs_iphone
+  mode: single
+- id: '1727315849226'
+  alias: Alarm - disarm
+  description: ''
+  triggers:
+  - device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: disarmed
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Alarm has been disarmed.
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/alarm-disarmed.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: alarm-disarmed.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1727315901320'
+  alias: Alarm - armed home
+  description: ''
+  triggers:
+  - device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: armed_home
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Alarm armed home active!
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/armed-home.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: armed-home.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1727315967859'
+  alias: Alarm - armed away
+  description: ''
+  triggers:
+  - device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: armed_away
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Alarm armed away active!
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/armed-away.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: armed-away.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1727316046202'
+  alias: Alarm - triggered
+  description: ''
+  triggers:
+  - device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: triggered
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Alarm has been triggered!
+      title: "\U0001F6A8 Alarm Triggered!"
+      data:
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/alarm-triggered.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: alarm-triggered.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  - repeat:
+      while:
+      - condition: state
+        entity_id: alarm_control_panel.alarmo
+        state: triggered
+      sequence:
+      - delay:
+          seconds: 7
+      - metadata: {}
+        data:
+          message: Alarm has been triggered!
+          title: "\U0001F6A8 Alarm Triggered!"
+          data:
+            push:
+              sound:
+                name: default
+                critical: 1
+                volume: 1
+        action: notify.mobile_app_jrs_iphone
+  mode: restart
+- id: '1727360360909'
+  alias: Alarm - arming
+  description: ''
+  triggers:
+  - device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: arming
+    trigger: device
+  conditions: []
+  actions:
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/alarm-arming.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: alarm-arming.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1727394080842'
+  alias: Ring Keypad Automations
+  description: ''
+  use_blueprint:
+    path: ImSorryButWho/synchronize-ring-alarm-keypad-v2-with-alarmo.yaml
+    input:
+      keypad: b6435aa3281780c191db4ac33ce97463
+      alarm: alarm_control_panel.alarmo
+      selected_action_police:
+      - action: light.toggle
+        metadata: {}
+        target:
+          entity_id: light.living_room
+        data:
+          brightness_pct: 100
+          color_temp_kelvin: 2541
+- id: '1727896027310'
+  alias: laundry room window - close
+  description: ''
+  trigger:
+  - type: not_opened
+    platform: device
+    device_id: 1ca8dca9f395a3af7c7b6288cecce5a0
+    entity_id: abc4ff99c34f646d9826ed4410c83e63
+    domain: binary_sensor
+  condition:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_disarmed
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Laundry room window has been closed.
+  mode: single
+- id: '1727896046986'
+  alias: laundry room window - open
+  description: ''
+  triggers:
+  - type: opened
+    device_id: 1ca8dca9f395a3af7c7b6288cecce5a0
+    entity_id: abc4ff99c34f646d9826ed4410c83e63
+    domain: binary_sensor
+    trigger: device
+  conditions:
+  - condition: device
+    device_id: b13c93cfd52804c82936180f0b540335
+    domain: alarm_control_panel
+    entity_id: 88369ac959d8646a0102e698481c5f5c
+    type: is_disarmed
+  actions:
+  - metadata: {}
+    data:
+      message: Laundry room window has been opened!
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/laundry-room-window-open.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: laundry-room-window-open.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1729433046916'
+  alias: Outside Lights - On
+  description: ''
+  triggers:
+  - event: sunset
+    offset: 0
+    trigger: sun
+  conditions: []
+  actions:
+  - type: turn_on
+    device_id: 42238e1d7b205648aeef8e6f79f247a1
+    entity_id: 658692981bbe9fe3a000fd02ed55f82d
+    domain: light
+    brightness_pct: 75
+  - type: turn_on
+    device_id: cad847071398523edbc43abd059c290a
+    entity_id: 3f31ba213cf21dcc4213706b12dbc258
+    domain: light
+    brightness_pct: 75
+  mode: single
+- id: '1729433217971'
+  alias: Outside Lights - Off
+  description: ''
+  triggers:
+  - at: 04:00:00
+    trigger: time
+  conditions: []
+  actions:
+  - type: turn_off
+    device_id: 42238e1d7b205648aeef8e6f79f247a1
+    entity_id: 658692981bbe9fe3a000fd02ed55f82d
+    domain: light
+  - type: turn_off
+    device_id: cad847071398523edbc43abd059c290a
+    entity_id: 3f31ba213cf21dcc4213706b12dbc258
+    domain: light
+  mode: single
+- id: '1729451135065'
+  alias: Back porch light - on
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_on
+    device_id: 42238e1d7b205648aeef8e6f79f247a1
+    entity_id: 658692981bbe9fe3a000fd02ed55f82d
+    domain: light
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Back porch light has been turned on.
+  mode: single
+- id: '1729451157235'
+  alias: Back porch light - off
+  description: ''
+  trigger:
+  - platform: device
+    type: turned_off
+    device_id: 42238e1d7b205648aeef8e6f79f247a1
+    entity_id: 658692981bbe9fe3a000fd02ed55f82d
+    domain: light
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: Back porch light has been turned off.
+  mode: single
+- id: '1739653724921'
+  alias: New network device
+  description: New network device
+  trigger:
+  - platform: event
+    event_type: tplink_router_new_device
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    data:
+      content: New device appear {{ trigger.event.data.hostname }} with IP {{ trigger.event.data.ip_address
+        }}
+  mode: single
+- id: '1739654099274'
+  alias: Device online
+  description: Device online
+  trigger:
+  - platform: event
+    event_type: tplink_router_device_online
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: '{{ trigger.event.data.hostname }} ({{     trigger.event.data.ip_address
+        }}) connected to network'
+  mode: single
+- id: '1739654187294'
+  alias: device offline
+  description: Device offline
+  trigger:
+  - platform: event
+    event_type: tplink_router_device_offline
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: '{{ trigger.event.data.hostname }} ({{     trigger.event.data.ip_address
+        }}) disconnected from network'
+  mode: single
+- id: '1739654770802'
+  alias: new device
+  description: new device
+  trigger:
+  - platform: event
+    event_type: tplink_router_new_device
+  condition: []
+  action:
+  - service: notify.mobile_app_jrs_iphone
+    metadata: {}
+    data:
+      message: New device connected to network {{ trigger.event.data.hostname }} ({{     trigger.event.data.ip_address
+        }})
+  mode: single
+- id: '1740602477710'
+  alias: Garage open
+  description: ''
+  triggers:
+  - type: opened
+    device_id: 4cb99ba8f9fdf8ca745aab16ab2ab14c
+    entity_id: d80b075e33c67198113ec57c57a0b886
+    domain: binary_sensor
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Garage has been opened!
+    action: notify.mobile_app_jrs_iphone
+  - target:
+      entity_id: media_player.music_player_daemon
+    data:
+      media:
+        media_content_id: media-source://media_source/local/garage-open.mp3
+        media_content_type: audio/mpeg
+        metadata:
+          title: garage-open.mp3
+          thumbnail:
+          media_class: music
+          children_media_class:
+          navigateIds:
+          - {}
+          - media_content_type: app
+            media_content_id: media-source://media_source
+          browse_entity_id: media_player.music_player_daemon
+    action: media_player.play_media
+  mode: single
+- id: '1740602532811'
+  alias: garage closed
+  description: ''
+  triggers:
+  - type: not_opened
+    device_id: 4cb99ba8f9fdf8ca745aab16ab2ab14c
+    entity_id: d80b075e33c67198113ec57c57a0b886
+    domain: binary_sensor
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Garage has been closed.
+    action: notify.mobile_app_jrs_iphone
+  mode: single
+- id: '1741389362951'
+  alias: front door light - on
+  description: ''
+  triggers:
+  - type: turned_on
+    device_id: cad847071398523edbc43abd059c290a
+    entity_id: 3f31ba213cf21dcc4213706b12dbc258
+    domain: light
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Front door light has been turned on.
+    action: notify.mobile_app_jrs_iphone
+  mode: single
+- id: '1741389435791'
+  alias: front door light - off
+  description: ''
+  triggers:
+  - type: turned_off
+    device_id: cad847071398523edbc43abd059c290a
+    entity_id: 3f31ba213cf21dcc4213706b12dbc258
+    domain: light
+    trigger: device
+  conditions: []
+  actions:
+  - metadata: {}
+    data:
+      message: Front door light has been turned off.
+    action: notify.mobile_app_jrs_iphone
+  mode: single
+- id: '1750688150519'
+  alias: new hour
+  description: ''
+  triggers:
+  - trigger: time_pattern
+    minutes: '0'
+    seconds: '0'
+  conditions: []
+  actions:
+  - sequence:
+    - action: media_player.volume_set
+      metadata: {}
+      data:
+        volume_level: 0.5
+      target:
+        device_id: 7457b5c1a503ae4a1024f8e853e242fa
+    - action: media_player.play_media
+      target:
+        entity_id: media_player.music_player_daemon
+      data:
+        media_content_id: media-source://media_source/local/gun cock.mp3
+        media_content_type: audio/mpeg
+      metadata:
+        title: gun cock.mp3
+        thumbnail:
+        media_class: music
+        children_media_class:
+        navigateIds:
+        - {}
+        - media_content_type: app
+          media_content_id: media-source://media_source
+  - sequence:
+    - delay:
+        hours: 0
+        minutes: 0
+        seconds: 2
+        milliseconds: 0
+    - action: media_player.volume_set
+      metadata: {}
+      data:
+        volume_level: 1
+      target:
+        device_id: 7457b5c1a503ae4a1024f8e853e242fa
+  mode: single
+- id: '1775680361666'
+  alias: Ring Keypad Automations
+  description: ''
+  use_blueprint:
+    path: ImSorryButWho/synchronize-ring-alarm-keypad-v2-with-alarmo.yaml
+    input:
+      keypad: b6435aa3281780c191db4ac33ce97463
+      alarm: alarm_control_panel.alarmo
+      selected_action_police:
+      - action: light.turn_on
+        metadata: {}
+        target:
+          entity_id: light.living_room
+        data:
+          color_temp_kelvin: 2628
+          brightness_pct: 100
+- id: '1775688552458'
+  alias: Frigate - Person Detected
+  description: ''
+  triggers:
+  - topic: frigate/events
+    trigger: mqtt
+  conditions: []
+  actions:
+  - condition: template
+    value_template: "{{ trigger.payload_json.type == 'new' and\n   trigger.payload_json.after.label
+      == 'person' and\n   trigger.payload_json.after.camera == 'tapo_cam' }}\n"
+  - action: notify.mobile_app_jrs_iphone
+    data:
+      title: "\U0001F464 Person Detected"
+      message: Someone was detected on Tapo Cam
+      data:
+        push:
+          sound:
+            name: default
+            critical: 1
+            volume: 1
+  mode: single
+- id: '1789181812560'
+  alias: T5AI reply -> MPD
+  description: Play the voice satellite's spoken reply on Music Player Daemon
+  triggers:
+  - trigger: webhook
+    webhook_id: t5ai_reply
+    allowed_methods:
+    - POST
+    local_only: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.json.text is defined and trigger.json.text | trim
+      != '''' }}'
+  actions:
+  - action: tts.speak
+    target:
+      entity_id: tts.piper
+    data:
+      media_player_entity_id: media_player.music_player_daemon
+      message: '{{ trigger.json.text }}'
+      cache: true
+      options:
+        voice: en_US-joe-medium
+  mode: queued
+- id: jarvis_satellite_watchdog
+  alias: Jarvis satellite watchdog
+  description: If the USB-mic satellite sits in listening/processing/responding too
+    long (happens when 'hey jarvis' is said again before the previous reply finished),
+    reload its Wyoming entry so both sides reset.
+  triggers:
+  - trigger: state
+    entity_id: assist_satellite.usb_mic
+    to: listening
+    for:
+      seconds: 25
+  - trigger: state
+    entity_id: assist_satellite.usb_mic
+    to: processing
+    for:
+      seconds: 60
+  - trigger: state
+    entity_id: assist_satellite.usb_mic
+    to: responding
+    for:
+      seconds: 90
+  conditions: []
+  actions:
+  - action: logbook.log
+    data:
+      name: Jarvis watchdog
+      message: satellite stuck in {{ trigger.to_state.state }}, reloading the Wyoming
+        entry
+      entity_id: assist_satellite.usb_mic
+  - action: homeassistant.reload_config_entry
+    data:
+      entry_id: 01M2B55JHZNZJ1F095GEAQ3MHY
+  mode: single
+- id: jarvis_burp
+  alias: Jarvis - burp
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: time_pattern
+    minutes: /15
+  conditions:
+  - condition: template
+    value_template: '{{ not is_state(''input_boolean.jarvis_asleep'',''on'') }}'
+  - condition: time
+    after: '11:00:00'
+    before: '22:30:00'
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: template
+    value_template: '{{ range(8) | random == 0 }}'
+  - condition: numeric_state
+    entity_id: counter.jarvis_burps
+    below: 2
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      sound: '{{ [''burp1'',''burp2''] | random }}'
+      gesture: burp
+      gesture_seconds: 2
+      remark: '{{ [''Excuse me.'', ''''] | random }}'
+      counter: counter.jarvis_burps
+  mode: single
+- id: jarvis_sigh
+  alias: Jarvis - sigh
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: state
+    entity_id: assist_satellite.usb_mic
+    to: idle
+    for:
+      hours: 2
+  conditions:
+  - condition: template
+    value_template: '{{ not is_state(''input_boolean.jarvis_asleep'',''on'') }}'
+  - condition: time
+    after: '11:00:00'
+    before: '22:30:00'
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: numeric_state
+    entity_id: counter.jarvis_sighs
+    below: 3
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      sound: '{{ [''sigh1'',''sigh2''] | random }}'
+      gesture: sigh
+      gesture_seconds: 3
+      counter: counter.jarvis_sighs
+  mode: single
+- id: jarvis_evening_yawn
+  alias: Jarvis - evening yawn
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: state
+    entity_id: assist_satellite.usb_mic
+    to: idle
+    for:
+      minutes: 90
+  conditions:
+  - condition: template
+    value_template: '{{ not is_state(''input_boolean.jarvis_asleep'',''on'') }}'
+  - condition: time
+    after: '21:00:00'
+    before: 00:30:00
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: numeric_state
+    entity_id: counter.jarvis_yawns
+    below: 2
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      sound: yawn
+      gesture: yawn
+      gesture_seconds: 4
+      counter: counter.jarvis_yawns
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.jarvis_gesture
+    data:
+      value: sleepy
+  mode: single
+- id: jarvis_snore
+  alias: Jarvis - snore
+  description: Part of Jarvis's cheeky behaviours. At most one quiet snore per nap,
+    at night, once the face has been asleep a while (input_boolean.jarvis_asleep is
+    set by face.html on the Pi). Gated by input_boolean.jarvis_cheeky and script.jarvis_sfx.
+  triggers:
+  - trigger: state
+    entity_id: input_boolean.jarvis_asleep
+    to: 'on'
+    for:
+      minutes: 25
+  conditions:
+  - condition: time
+    after: '21:00:00'
+    before: 00:30:00
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: template
+    value_template: '{{ range(2) | random == 0 }}'
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      sound: snore
+      gesture: snore
+      gesture_seconds: 5
+  mode: single
+- id: jarvis_sleepy_clear
+  alias: Jarvis - wake from sleepy
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: state
+    entity_id: input_boolean.jarvis_asleep
+    to: 'off'
+  - trigger: state
+    entity_id: assist_satellite.usb_mic
+    from: idle
+  - trigger: time
+    at: 07:00:00
+  - trigger: state
+    entity_id: alarm_control_panel.alarmo
+    to: disarmed
+  conditions:
+  - condition: template
+    value_template: '{{ states(''input_text.jarvis_gesture'') in [''sleepy'',''snore'']
+      }}'
+  actions:
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.jarvis_gesture
+    data:
+      value: ''
+  mode: single
+- id: jarvis_morning
+  alias: Jarvis - morning yawn and brief
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: state
+    entity_id: assist_satellite.usb_mic
+    from: responding
+    to: idle
+  - trigger: state
+    entity_id: alarm_control_panel.alarmo
+    to: disarmed
+  conditions:
+  - condition: time
+    after: 07:00:00
+    before: '11:00:00'
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: numeric_state
+    entity_id: counter.jarvis_morning
+    below: 1
+  - condition: template
+    value_template: >-
+      {{ trigger.entity_id == 'alarm_control_panel.alarmo'
+         or is_state('binary_sensor.living_room_motion_occupancy', 'on')
+         or (now() - states.binary_sensor.living_room_motion_occupancy.last_changed).total_seconds() < 1800 }}
+  actions:
+  - delay:
+      seconds: 2
+  - action: script.jarvis_sfx
+    data:
+      sound: yawn_short
+      gesture: morning
+      gesture_seconds: 4
+      remark: Morning. It's {{ state_attr('weather.forecast_home','temperature') |
+        round(0) | int }} and {{ states('weather.forecast_home') | replace('partlycloudy','partly
+        cloudy') | replace('clear-night','clear') | replace('-',' ') }} out.{% set
+        f = state_attr('sensor.daily_forecast','forecast') or [] %}{% if f %} High
+        of {{ f[0].temperature | round(0) | int }} today{% if f[0].condition in ['rainy','pouring','lightning-rainy','snowy','snowy-rainy']
+        %}, and expect {{ 'snow' if 'snow' in f[0].condition else 'rain' }}{% endif
+        %}.{% endif %}{% set open = expand('binary_sensor.front_door_sensor_contact','binary_sensor.garage_door_sensor_contact','binary_sensor.laundry_room_door_contact','binary_sensor.laundry_room_window_contact','cover.garage_door')
+        | selectattr('state','in',['on','open']) | map(attribute='name') | list %}{%
+        if open %} The {{ open | map('lower') | join(' and the ') }} {{ 'is' if open
+        | count == 1 else 'are' }} open.{% endif %}
+      counter: counter.jarvis_morning
+      force: true
+  mode: single
+- id: jarvis_bedtime
+  alias: Jarvis - bedtime
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: state
+    entity_id: alarm_control_panel.alarmo
+    to: armed_home
+  conditions:
+  - condition: time
+    after: '20:00:00'
+    before: 03:00:00
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  actions:
+  - delay:
+      seconds: 3
+  - action: script.jarvis_sfx
+    data:
+      sound: yawn
+      gesture: yawn
+      gesture_seconds: 4
+      remark: '{{ [''Goodnight.'', ''Sleep well.'', ''Night.''] | random }}'
+      force: true
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.jarvis_gesture
+    data:
+      value: sleepy
+  mode: single
+- id: jarvis_front_door
+  alias: Jarvis - front door
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: state
+    entity_id: binary_sensor.front_door_sensor_contact
+    to: 'on'
+  conditions:
+  - condition: time
+    after: '11:00:00'
+    before: '22:30:00'
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: state
+    entity_id: alarm_control_panel.alarmo
+    state: disarmed
+  - condition: template
+    value_template: '{{ state_attr(''automation.jarvis_front_door'',''last_triggered'')
+      is none or (now() - state_attr(''automation.jarvis_front_door'',''last_triggered'')).total_seconds()
+      > 1800 }}'
+  - condition: template
+    value_template: '{{ range(2) | random == 0 }}'
+  actions:
+  - delay:
+      seconds: 4
+  - action: script.jarvis_sfx
+    data:
+      sound: '{{ [''whistle'', ''''] | random }}'
+      gesture: look
+      gesture_seconds: 3
+      remark: '{{ ['''', ''Welcome back.'', ''Hello there.''] | random }}'
+      force: true
+  mode: single
+- id: jarvis_garage_late
+  alias: Jarvis - late garage
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: state
+    entity_id: cover.garage_door
+    to: open
+  conditions:
+  - condition: time
+    after: '22:00:00'
+    before: 00:30:00
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      gesture: look
+      gesture_seconds: 3
+      remark: '{{ [''Late night?'', ''Where are we off to?'', ''Burning the midnight
+        oil, I see.''] | random }}'
+      force: true
+  mode: single
+- id: jarvis_laundry_rain
+  alias: Jarvis - laundry window and rain
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: time
+    at: 09:30:00
+  - trigger: time
+    at: '17:00:00'
+  conditions:
+  - condition: state
+    entity_id: binary_sensor.laundry_room_window_contact
+    state: 'on'
+  - condition: template
+    value_template: '{% set f = state_attr(''sensor.daily_forecast'',''forecast'')
+      or [] %}{{ f and f[0].condition in [''rainy'',''pouring'',''lightning-rainy'',''snowy-rainy'']
+      }}'
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      gesture: look
+      gesture_seconds: 3
+      remark: The laundry room window is open and it is supposed to rain today.
+      force: true
+  mode: single
+- id: jarvis_sneeze
+  alias: Jarvis - sneeze
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: time_pattern
+    minutes: /30
+  conditions:
+  - condition: template
+    value_template: '{{ not is_state(''input_boolean.jarvis_asleep'',''on'') }}'
+  - condition: time
+    after: '11:00:00'
+    before: '22:30:00'
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: template
+    value_template: '{{ range(20) | random == 0 }}'
+  - condition: numeric_state
+    entity_id: counter.jarvis_misc
+    below: 1
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      sound: sneeze
+      gesture: sneeze
+      gesture_seconds: 2
+      remark: '{{ ['''', ''Excuse me.''] | random }}'
+      counter: counter.jarvis_misc
+  mode: single
+- id: jarvis_hum
+  alias: Jarvis - hum
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: time_pattern
+    minutes: /30
+  conditions:
+  - condition: template
+    value_template: '{{ not is_state(''input_boolean.jarvis_asleep'',''on'') }}'
+  - condition: time
+    after: '13:00:00'
+    before: '18:00:00'
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: template
+    value_template: '{{ range(10) | random == 0 }}'
+  - condition: template
+    value_template: '{{ state_attr(''automation.jarvis_hum'',''last_triggered'') is
+      none or (now() - state_attr(''automation.jarvis_hum'',''last_triggered'')).total_seconds()
+      > 72000 }}'
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      sound: hum
+      gesture: hum
+      gesture_seconds: 6
+  mode: single
+- id: jarvis_counters_reset
+  alias: Jarvis - reset daily counters
+  description: Part of Jarvis's cheeky behaviours. Gated by input_boolean.jarvis_cheeky
+    and script.jarvis_sfx.
+  triggers:
+  - trigger: time
+    at: 03:00:00
+  conditions: []
+  actions:
+  - action: counter.reset
+    target:
+      entity_id:
+      - counter.jarvis_burps
+      - counter.jarvis_sighs
+      - counter.jarvis_yawns
+      - counter.jarvis_morning
+      - counter.jarvis_misc
+  mode: single
+- id: jarvis_hiccups
+  alias: Jarvis - hiccups
+  description: Part of Jarvis's cheeky behaviours. Rare run of hiccups in the afternoon.
+  triggers:
+  - trigger: time_pattern
+    minutes: /30
+  conditions:
+  - condition: template
+    value_template: '{{ not is_state(''input_boolean.jarvis_asleep'',''on'') }}'
+  - condition: time
+    after: '11:00:00'
+    before: '22:30:00'
+  - condition: state
+    entity_id: input_boolean.jarvis_cheeky
+    state: 'on'
+  - condition: template
+    value_template: '{{ range(30) | random == 0 }}'
+  - condition: template
+    value_template: '{{ state_attr(''automation.jarvis_hiccups'',''last_triggered'')
+      is none or (now() - state_attr(''automation.jarvis_hiccups'',''last_triggered'')).total_seconds()
+      > 72000 }}'
+  actions:
+  - action: script.jarvis_sfx
+    data:
+      sound: hiccup
+      gesture: burp
+      gesture_seconds: 4
+      remark: '{{ ['''', ''Sorry.'', ''Hic. Excuse me.''] | random }}'
+  mode: single
+- id: jarvis_transcript_webhook
+  alias: Jarvis - transcript relay
+  description: Stores what Jarvis heard and said (posted by the jarvis-micwatch container
+    from the satellite log) for the "what did you hear" intent and the face caption.
+  triggers:
+  - trigger: webhook
+    webhook_id: jarvis-transcript
+    allowed_methods:
+    - POST
+    local_only: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.json is defined and trigger.json.text is defined }}'
+  actions:
+  - choose:
+    - conditions: '{{ trigger.json.kind == ''heard'' }}'
+      sequence:
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.jarvis_prev_heard
+        data:
+          value: '{{ states(''input_text.jarvis_last_heard'') }}'
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.jarvis_last_heard
+        data:
+          value: '{{ trigger.json.text | truncate(250, true, '''') }}'
+    - conditions: '{{ trigger.json.kind == ''said'' }}'
+      sequence:
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.jarvis_last_said
+        data:
+          value: '{{ trigger.json.text | truncate(250, true, '''') }}'
+  mode: queued
+  max: 10

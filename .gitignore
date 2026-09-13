@@ -1,0 +1,13 @@
+# secrets and local state
+.env
+satellite/data/
+satellite/debug/
+face/face.html
+*.bak-*
+# downloaded models (large; re-downloaded on first start)
+whisper/
+piper/
+# scratch
+*.pyc
+__pycache__/
+.DS_Store

@@ -1,0 +1,25 @@
+# "Garage Door" and "Garage Side Door" start with the name of the Garage area,
+# so the built-in parser reads "is the garage door open" as area + device
+# class and fails. These dedicated intents answer from the entities directly.
+# Handlers: GarageDoorState / GarageSideDoorState in intent_scripts.yaml.
+# Reload with conversation.reload (sentences) and intent_script.reload.
+language: "en"
+lists:
+  garage_q:
+    values:
+      - in: "(open|opened|up)"
+        out: "open"
+      - in: "(closed|shut|down)"
+        out: "closed"
+intents:
+  GarageDoorState:
+    data:
+      - sentences:
+          - "is the garage [door] [still] {garage_q:asked}"
+          - "is the (overhead|big) [garage] door [still] {garage_q:asked}"
+          - "did the garage [door] {garage_q:asked}"
+  GarageSideDoorState:
+    data:
+      - sentences:
+          - "is the garage side door [still] {garage_q:asked}"
+          - "is the side door [(of|to) the garage] [still] {garage_q:asked}"

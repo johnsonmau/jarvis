@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Homelab Face</title>
+<style id="face-css">
+  /* ---------------------------------------------------------------------------
+   * Voice-assistant face for the 7" LCD on the Pi. Built for a screen whose
+   * blacks lift to grey at night: the eyes are the brightest, biggest thing on
+   * screen and never rely on dark-on-dark shading. One behaviour engine drives
+   * four skins through CSS variables:
+   *   --gx/--gy   gaze, -1..1            --lt/--lt2/--lb  lid coverage (%), L top / R top / bottom
+   *   --tilt      brow tilt (deg)         --dim            0..1 night brightness
+   * Skins:  beam | ring | iris | capsule       Backgrounds:  void | slate | dusk
+   * ------------------------------------------------------------------------- */
+  .face { position: absolute; inset: 0; overflow: hidden; background: var(--bgc);
+          display: flex; align-items: center; justify-content: center;
+          --s: calc(var(--size, 42) * 1cqmin);
+          --gx: 0; --gy: 0; --lt: 0; --lt2: 0; --lb: 0; --tilt: 0deg; --gms: 160ms; --lidms: 300ms; --dim: 1;
+          --c: #c8fff6; --c2: #57e3d3; --g: 110,240,225;
+          filter: brightness(var(--dim)); transition: background .6s ease, filter 2s ease; }
+  .face[data-bg="void"]  { --bgc: #05080b; }
+  .face[data-bg="slate"] { --bgc: #121821; }
+  .face[data-bg="dusk"]  { --bgc: #181420; }
+  .face[data-state="listening"] { --c: #d4ecff; --c2: #5cc1ff; --g: 120,200,255; }
+  .face[data-state="thinking"]  { --c: #ffe7ac; --c2: #ffbb45; --g: 255,196,90; }
+  .face[data-state="speaking"]  { --c: #d4ffe9; --c2: #5ff2b0; --g: 110,250,190; }
+  .face[data-state="offline"]   { --c: #98a3a9; --c2: #4a545a; --g: 110,120,130; }
+  .face[data-state="sleeping"]  { --c: #a9bcc6; --c2: #4f6572; --g: 100,130,150; }
+
+  .face .eyes { display: flex; align-items: center; gap: var(--gap); transition: transform .7s cubic-bezier(.3,.7,.3,1); }
+  .face[data-state="listening"] .eyes { transform: rotate(-3deg); }
+  .face .eye  { position: relative; width: var(--w); height: var(--h); }
+  .face .gaze { position: absolute; inset: 0; transition: transform var(--gms) cubic-bezier(.2,.9,.2,1); }
+  .face .body { position: absolute; inset: 0;
+                transition: background .4s ease, box-shadow .4s ease, transform .35s cubic-bezier(.3,.7,.3,1), border-color .4s ease, opacity .4s ease; }
+  .face .pupil { position: absolute; left: 50%; top: 50%; width: 0; height: 0; transition: transform var(--gms) cubic-bezier(.2,.9,.2,1); }
+  .face .pupil::before { content: ""; position: absolute; left: 50%; top: 50%; width: var(--p); height: var(--p);
+                         margin: calc(var(--p) * -.5) 0 0 calc(var(--p) * -.5); border-radius: 50%;
+                         transition: transform .4s ease, background .4s ease, box-shadow .4s ease; }
+  .face .spec { position: absolute; pointer-events: none; }
+  .face .halo { position: absolute; inset: calc(var(--s) * -.09); border-radius: 50%; pointer-events: none;
+                border: calc(var(--s) * .012) solid rgba(var(--g), 0); }
+  .face[data-state="listening"] .halo { border-color: rgba(var(--g), .75); animation: faceRing 1.6s ease-out infinite; }
+  .face .eye.R .halo, .face .eye.R .body, .face .eye.R .pupil::before { animation-delay: .15s; }
+
+  /* lids: background-coloured wedges, so they read as "eye closing" on any panel */
+  .face .lid { position: absolute; left: -25%; right: -25%; height: 0; z-index: 3; background: var(--bgc);
+               transition: height var(--lidms) cubic-bezier(.5,0,.4,1), transform .3s ease, background .6s ease; }
+  .face .lid.top { top: -15%; height: calc(var(--lt) * 1.3%); border-radius: 0 0 50% 50% / 0 0 60% 60%;
+                   transform-origin: 50% 0; transform: rotate(calc(var(--tilt) * -1)); }
+  .face .eye.R .lid.top { height: calc(var(--lt2) * 1.3%); transform: rotate(var(--tilt)); }
+  .face .lid.bot { bottom: -15%; height: calc(var(--lb) * 1.3%); border-radius: 50% 50% 0 0 / 60% 60% 0 0; }
+
+  @keyframes faceRing    { 0% { transform: scale(.94); opacity: .9; } 100% { transform: scale(1.35); opacity: 0; } }
+  @keyframes faceBreathe { 0%, 100% { opacity: .86; } 50% { opacity: 1; } }
+  @keyframes faceTalk    { 0%, 100% { transform: scaleY(.9); } 50% { transform: scaleY(1.05); } }
+  @keyframes facePulse   { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  @keyframes faceDilate  { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+
+  /* ---- BEAM: solid lit rounded blocks, the whole eye moves. Most luminous area of the four. ---- */
+  .face[data-skin="beam"] { --w: calc(var(--s) * .8); --h: calc(var(--s) * .86); --gap: calc(var(--s) * .55); }
+  .face[data-skin="beam"] .gaze { transform: translate(calc(var(--gx) * var(--s) * .09), calc(var(--gy) * var(--s) * .07)) rotate(calc(var(--gx) * 3deg)); }
+  .face[data-skin="beam"] .body { border-radius: 30% / 28%;
+        background: linear-gradient(180deg, #ffffff 0%, var(--c) 28%, var(--c2) 100%);
+        box-shadow: 0 0 calc(var(--s) * .1) rgba(var(--g), .6), 0 0 calc(var(--s) * .45) rgba(var(--g), .22); }
+  .face[data-skin="beam"] .pupil { display: none; }
+  .face[data-skin="beam"] .spec { left: 14%; top: 9%; width: 34%; height: 16%; border-radius: 50%; background: rgba(255,255,255,.55); filter: blur(calc(var(--s) * .012)); }
+  .face[data-skin="beam"] .halo { border-radius: 36% / 34%; }
+  .face[data-skin="beam"] .lid.top { border-radius: 0 0 30% 30% / 0 0 40% 40%; }
+  .face[data-skin="beam"] .lid.bot { border-radius: 30% 30% 0 0 / 40% 40% 0 0; }
+  .face[data-skin="beam"][data-state="idle"]      .body { animation: faceBreathe 4.6s ease-in-out infinite; }
+  .face[data-skin="beam"][data-state="listening"] .body { transform: scale(1.06, 1.1); }
+  .face[data-skin="beam"][data-state="thinking"]  .body { transform: scale(.94); }
+  .face[data-skin="beam"][data-state="speaking"]  .body { animation: faceTalk .3s ease-in-out infinite; }
+
+  /* ---- RING: thick lit ring with a lit pupil that travels inside. Gaze is unmistakable. ---- */
+  .face[data-skin="ring"] { --w: var(--s); --h: var(--s); --gap: calc(var(--s) * .6); --p: calc(var(--s) * .3); }
+  .face[data-skin="ring"] .gaze { transform: translate(calc(var(--gx) * var(--s) * .02), calc(var(--gy) * var(--s) * .02)); }
+  .face[data-skin="ring"] .body { border-radius: 50%; border: calc(var(--s) * .1) solid var(--c);
+        background: radial-gradient(circle, rgba(var(--g), .16) 0%, rgba(var(--g), .04) 60%, transparent 72%);
+        box-shadow: 0 0 calc(var(--s) * .1) rgba(var(--g), .6), inset 0 0 calc(var(--s) * .08) rgba(var(--g), .5); }
+  .face[data-skin="ring"] .pupil { transform: translate(calc(var(--gx) * var(--s) * .2), calc(var(--gy) * var(--s) * .17)); }
+  .face[data-skin="ring"] .pupil::before { background: radial-gradient(circle at 40% 35%, #ffffff 0%, var(--c) 40%, var(--c2) 100%);
+        box-shadow: 0 0 calc(var(--s) * .08) rgba(var(--g), .7); }
+  .face[data-skin="ring"] .spec { display: none; }
+  .face[data-skin="ring"][data-state="idle"]      .pupil::before { animation: faceBreathe 4.6s ease-in-out infinite; }
+  .face[data-skin="ring"][data-state="listening"] .pupil::before { transform: scale(1.2); }
+  .face[data-skin="ring"][data-state="thinking"]  .pupil::before { transform: scale(.8); }
+  .face[data-skin="ring"][data-state="speaking"]  .pupil::before { animation: facePulse .3s ease-in-out infinite; }
+
+  /* ---- IRIS: pale sclera, big dark pupil, coloured iris. Dark-on-bright: contrast no matter the panel. ---- */
+  .face[data-skin="iris"] { --w: var(--s); --h: var(--s); --gap: calc(var(--s) * .35); --p: calc(var(--s) * .52); }
+  .face[data-skin="iris"] .gaze { transform: translate(calc(var(--gx) * var(--s) * .02), calc(var(--gy) * var(--s) * .015)); }
+  .face[data-skin="iris"] .body { border-radius: 50%;
+        background: radial-gradient(circle at 45% 38%, #fcf9f1 0%, #ebe5d7 55%, #cfc8b7 100%);
+        box-shadow: inset 0 calc(var(--s) * -.03) calc(var(--s) * .09) rgba(40,30,20,.3), 0 0 calc(var(--s) * .14) rgba(var(--g), .3); }
+  .face[data-skin="iris"] .pupil { transform: translate(calc(var(--gx) * var(--s) * .18), calc(var(--gy) * var(--s) * .15)); }
+  .face[data-skin="iris"] .pupil::before {
+        background: radial-gradient(circle, #05080a 0%, #05080a 44%, var(--c2) 47%, var(--c) 58%, var(--c2) 74%, #0a1215 79%, #0a1215 100%);
+        box-shadow: 0 0 calc(var(--s) * .03) rgba(0,0,0,.5); }
+  .face[data-skin="iris"] .spec { left: 30%; top: 22%; width: 14%; height: 11%; border-radius: 50%; background: #fff; opacity: .9; z-index: 2; transform: rotate(-20deg); }
+  .face[data-skin="iris"][data-state="listening"] .pupil::before { transform: scale(1.12); }
+  .face[data-skin="iris"][data-state="thinking"]  .pupil::before { transform: scale(.9); }
+  .face[data-skin="iris"][data-state="speaking"]  .pupil::before { animation: faceDilate .3s ease-in-out infinite; }
+  .face[data-skin="iris"][data-state="offline"]   .body { filter: saturate(.3) brightness(.7); }
+
+  /* ---- CAPSULE: tall lit pills, the expressive-robot direction from the design canvas, brightened. ---- */
+  .face[data-skin="capsule"] { --w: calc(var(--s) * .5); --h: calc(var(--s) * 1.05); --gap: calc(var(--s) * .5); }
+  .face[data-skin="capsule"] .gaze { transform: translate(calc(var(--gx) * var(--s) * .12), calc(var(--gy) * var(--s) * .08)) rotate(calc(var(--gx) * 4deg)); }
+  .face[data-skin="capsule"] .body { border-radius: 50% / 26%;
+        background: linear-gradient(180deg, #ffffff 0%, var(--c) 22%, var(--c2) 100%);
+        box-shadow: 0 0 calc(var(--s) * .1) rgba(var(--g), .6), 0 0 calc(var(--s) * .45) rgba(var(--g), .22); }
+  .face[data-skin="capsule"] .pupil { display: none; }
+  .face[data-skin="capsule"] .spec { left: 18%; top: 6%; width: 36%; height: 14%; border-radius: 50%; background: rgba(255,255,255,.5); filter: blur(calc(var(--s) * .01)); }
+  .face[data-skin="capsule"] .halo { border-radius: 50% / 36%; }
+  .face[data-skin="capsule"][data-state="idle"]      .body { animation: faceBreathe 4.6s ease-in-out infinite; }
+  .face[data-skin="capsule"][data-state="listening"] .body { transform: scale(1.08, 1.12); }
+  .face[data-skin="capsule"][data-state="thinking"]  .body { transform: scale(.92); }
+  .face[data-skin="capsule"][data-state="speaking"]  .body { animation: faceTalk .3s ease-in-out infinite; }
+  /* ---- gestures (driven by Home Assistant input_text.jarvis_gesture) -------- */
+  @keyframes faceJolt   { 0% { transform: translateY(0); } 20% { transform: translateY(calc(var(--s) * -.12)) scale(1.04); } 45% { transform: translateY(calc(var(--s) * .05)); } 100% { transform: translateY(0); } }
+  @keyframes faceBounce { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(calc(var(--s) * -.07)); } }
+  @keyframes faceSway   { 0%, 100% { transform: rotate(-3deg) translateX(calc(var(--s) * -.03)); } 50% { transform: rotate(3deg) translateX(calc(var(--s) * .03)); } }
+  @keyframes faceSnore  { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.07); } }
+  .face[data-gesture="burp"][data-state]   .eyes { animation: faceJolt .6s ease-out; }
+  .face[data-gesture="sneeze"][data-state] .eyes { animation: faceJolt .5s ease-out .45s; }
+  .face[data-gesture="laugh"][data-state]  .eyes { animation: faceBounce .34s ease-in-out infinite; }
+  .face[data-gesture="hum"][data-state]    .eyes { animation: faceSway 1.3s ease-in-out infinite; }
+  .face[data-gesture="snore"][data-state]  .body { animation: faceSnore 2.4s ease-in-out infinite; }
+  .face[data-gesture="sleepy"][data-state] .body, .face[data-gesture="snore"][data-state] .body { filter: brightness(.85); }
+  /* ---- asleep: after a quiet spell (see &sleep= in the app script) ----------- */
+  @keyframes faceBreathSlow { 0%, 100% { transform: scale(1) translateY(0); } 50% { transform: scale(1.03) translateY(calc(var(--s) * .015)); } }
+  .face[data-state="sleeping"] .body { animation: faceBreathSlow 4.2s ease-in-out infinite; filter: brightness(.72) saturate(.7); }
+  .face[data-state="sleeping"] .eyes { transform: translateY(calc(var(--s) * .04)); }
+  .face[data-state="sleeping"] .halo { border-color: rgba(var(--g), .22); animation: none; }
+  .face[data-state="sleeping"] .spec { opacity: .35; }
+  .face[data-skin="iris"][data-state="sleeping"] .body { filter: brightness(.6) saturate(.5); }
+  .face .eyes { position: relative; }
+  .face .zz { position: absolute; right: calc(var(--s) * -.06); top: calc(var(--s) * .12); width: 0; height: 0; display: none; pointer-events: none; z-index: 4; }
+  .face[data-state="sleeping"] .zz { display: block; }
+  .face .zz span { position: absolute; left: 0; bottom: 0; font: 700 calc(var(--s) * .2) / 1 ui-monospace, "DejaVu Sans Mono", monospace;
+                   color: var(--c); text-shadow: 0 0 calc(var(--s) * .04) rgba(var(--g), .8); opacity: 0;
+                   animation: faceZ 3.9s ease-out infinite; }
+  .face .zz span:nth-child(2) { animation-delay: 1.3s; font-size: calc(var(--s) * .26); }
+  .face .zz span:nth-child(3) { animation-delay: 2.6s; font-size: calc(var(--s) * .32); }
+  @keyframes faceZ {
+    0%   { opacity: 0;  transform: translate(0, 0) scale(.5) rotate(-10deg); }
+    12%  { opacity: .85; }
+    70%  { opacity: .6; }
+    100% { opacity: 0;  transform: translate(calc(var(--s) * .55), calc(var(--s) * -1.05)) scale(1.3) rotate(14deg); }
+  }
+</style>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; overflow: hidden; background: #05080b; }
+  body { container-type: size; cursor: none; font-family: ui-monospace, "DejaVu Sans Mono", monospace; }
+  #status { position: fixed; left: 1.2vmin; bottom: 1.2vmin; font-size: 1.6vmin; color: #6a8a92; letter-spacing: .1em; text-transform: uppercase; z-index: 9; display: none; }
+  #status.show { display: block; }
+  #hint { position: fixed; right: 1.4vmin; bottom: 1.2vmin; font-size: 1.8vmin; color: #6a8a92; letter-spacing: .1em; text-transform: uppercase; z-index: 9; display: none; text-align: right; line-height: 1.6; }
+  body.demo #hint { display: block; }
+  /* caption: what Jarvis heard / said, a few seconds at the bottom */
+  #caption { position: fixed; left: 50%; bottom: 4vmin; transform: translateX(-50%) translateY(1vmin); max-width: 86vw;
+             font-size: 2.6vmin; line-height: 1.35; text-align: center; letter-spacing: .02em; z-index: 9;
+             color: #8fa3ad; opacity: 0; transition: opacity .35s ease, transform .35s ease; pointer-events: none; }
+  #caption.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  #caption.said { color: #c8fff6; }
+  #caption.heard::before { content: "\201C"; } #caption.heard::after { content: "\201D"; }
+</style>
+</head>
+<body>
+  <div id="face"></div>
+  <div id="status">connecting…</div>
+  <div id="hint"></div>
+  <div id="caption"></div>
+
+<script id="face-engine">
+/* Face engine: builds the eye DOM inside a container and runs the behaviour loops.
+ * Rendering is entirely CSS (see #face-css); the engine only sets variables and data-state. */
+window.Face = (() => {
+  "use strict";
+  const SKINS = ["beam", "ring", "iris", "capsule"], BGS = ["void", "slate", "dusk"];
+  const STATES = ["idle", "listening", "thinking", "speaking", "offline", "sleeping"];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const chance = (p) => Math.random() < p;
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+  const eyeHTML = (side) => `<div class="eye ${side}"><div class="halo"></div><div class="gaze"><div class="body"><div class="pupil"></div><div class="spec"></div></div></div><div class="lid top"></div><div class="lid bot"></div></div>`;
+
+  function build(root, opts = {}) {
+    root.classList.add("face");
+    root.dataset.skin = SKINS.includes(opts.skin) ? opts.skin : "beam";
+    root.dataset.bg = BGS.includes(opts.bg) ? opts.bg : "void";
+    if (opts.size) root.style.setProperty("--size", opts.size);
+    root.innerHTML = `<div class="eyes">${eyeHTML("L")}${eyeHTML("R")}<div class="zz"><span>z</span><span>z</span><span>z</span></div></div>`;
+    const set = (k, v) => root.style.setProperty(k, v);
+
+    // ---- primitives: gaze in -1..1, lids in % of eye height ----------------
+    function look(x, y, ms = 160) { set("--gms", ms + "ms"); set("--gx", x); set("--gy", y); }
+    function lids(top, bot, ms = 300, topOther = null, tilt = 0) {
+      set("--lidms", ms + "ms"); set("--lt", top); set("--lt2", topOther ?? top); set("--lb", bot); set("--tilt", tilt + "deg");
+    }
+    let rest = { top: 0, bot: 0, topOther: null, tilt: 0 };
+    const restLids = (ms = 400) => lids(rest.top, rest.bot, ms, rest.topOther, rest.tilt);
+    async function blink(double = false) {
+      lids(100, 45, 90, 100, 0); await sleep(120); restLids(110);
+      if (double) { await sleep(150); lids(100, 45, 90, 100, 0); await sleep(110); restLids(110); }
+    }
+    async function eyeRoll(g) {
+      const path = [[0,-1],[.75,-.65],[1,.2],[.3,.9],[-.75,.6],[-.95,-.35],[-.1,-1],[0,0]];
+      for (const [x, y] of path) { if (gen !== g) return; look(x, y, 130); await sleep(140); }
+    }
+
+    // ---- behaviours ---------------------------------------------------------
+    let state = "", gen = 0;
+    async function idle(g) {
+      rest = baseRest(); restLids(); look(0, 0, 400);
+      while (gen === g) {
+        const r = Math.random();
+        if (r < .09) await eyeRoll(g);
+        else if (r < .22) {                                        // side-eye: squint, one brow raised
+          const dir = chance(.5) ? -1 : 1; look(dir * .95, 0, 150);
+          rest = { top: 26, bot: 10, topOther: 40, tilt: dir * 6 }; restLids();
+          await sleep(rnd(1500, 3200)); if (gen !== g) break;
+          rest = baseRest(); restLids(); look(0, 0, 220);
+        }
+        else if (r < .34) await blink(chance(.4));
+        else {                                                     // dart to a spot and hold
+          const ang = rnd(0, Math.PI * 2), rad = rnd(.2, 1);
+          look(Math.cos(ang) * rad, Math.sin(ang) * rad * .75, rnd(110, 190));
+        }
+        await sleep(rnd(700, 3400));
+        if (gen === g && chance(.15)) await blink();
+      }
+    }
+    async function listening(g) {
+      rest = { top: 0, bot: 0, topOther: null, tilt: 0 }; restLids(); look(0, 0, 220);
+      while (gen === g) { look(rnd(-.08, .08), rnd(-.05, .05), 320); await sleep(rnd(400, 900)); if (gen === g && chance(.08)) await blink(); }
+    }
+    async function thinking(g) {
+      let side = chance(.5) ? -1 : 1;
+      while (gen === g) {
+        look(side * .8, -.8, 170);
+        rest = { top: 22, bot: 0, topOther: 34, tilt: side * 5 }; restLids();   // one brow up
+        await sleep(rnd(1400, 3000)); if (gen !== g) break;
+        if (chance(.3)) await blink();
+        side = -side;
+      }
+    }
+    async function speaking(g) {
+      rest = { top: 0, bot: 6, topOther: null, tilt: 0 }; restLids();
+      while (gen === g) { look(rnd(-.45, .45), rnd(-.15, .15), 220); await sleep(rnd(900, 2200)); if (gen === g && chance(.12)) await blink(); }
+    }
+    function offline() { rest = { top: 42, bot: 8, topOther: null, tilt: 0 }; restLids(600); look(0, .25, 600); }
+    // asleep: lids drift almost shut, gaze sinks, the odd slow twitch / fully-shut moment
+    async function sleeping(g) {
+      look(0, .3, 1600);
+      rest = { top: 62, bot: 22, topOther: null, tilt: 0 }; restLids(1200); await sleep(1300); if (gen !== g) return;
+      rest = { top: 74, bot: 18, topOther: null, tilt: 0 }; restLids(1800);          // a thin slit stays open
+      while (gen === g) {
+        await sleep(rnd(9000, 18000)); if (gen !== g) break;
+        if (chance(.3)) { lids(100, 40, 1200); await sleep(rnd(1200, 2500)); if (gen !== g) break; restLids(1400); }
+        else { look(rnd(-.2, .2), rnd(.2, .4), 1800); }
+      }
+    }
+    // ---- gestures: one-shot or sustained overlays on top of the state loop ---
+    // Names come from Home Assistant (input_text.jarvis_gesture). Timed ones clear
+    // themselves; "sleepy" stays until the entity is cleared.
+    let gesture = "", ggen = 0;
+    const SLEEPY = { top: 46, bot: 12, topOther: null, tilt: 0 };
+    const baseRest = () => (gesture === "sleepy" || gesture === "snore") ? { ...SLEEPY } : { top: 0, bot: 0, topOther: null, tilt: 0 };
+    const endGesture = (g) => { if (ggen !== g) return; delete root.dataset.gesture; rest = baseRest(); restLids(500); look(0, 0, 500); };
+    const GESTURES = {
+      async yawn(g)    { look(0, .15, 800); lids(70, 25, 800); await sleep(1000); if (ggen !== g) return; lids(96, 42, 500); await sleep(650); endGesture(g); },
+      async burp(g)    { await sleep(150); await blink(); await sleep(450); endGesture(g); },
+      async sigh(g)    { look(0, .45, 500); lids(38, 10, 600); await sleep(1300); if (ggen !== g) return; await blink(); endGesture(g); },
+      async laugh(g)   { lids(48, 42, 200); await sleep(2400); endGesture(g); },
+      async eyeroll(g) { lids(30, 0, 200, 30, 0); await eyeRoll(gen); if (ggen !== g) return; await sleep(400); endGesture(g); },
+      async sneeze(g)  { look(0, -.6, 200); lids(55, 15, 250); await sleep(450); if (ggen !== g) return; lids(100, 62, 80); await sleep(420); endGesture(g); },
+      async hum(g)     { lids(14, 16, 500); await sleep(5500); endGesture(g); },
+      async look(g)    { look(-.9, -.2, 220); await sleep(900); if (ggen !== g) return; look(.7, -.1, 300); await sleep(800); endGesture(g); },
+      async morning(g) { await blink(true); look(-.8, -.3, 250); await sleep(500); look(.8, -.3, 300); await sleep(500); look(0, 0, 300); await sleep(300); endGesture(g); },
+      async sleepy(g)  { rest = { ...SLEEPY }; restLids(900); look(0, .2, 900);
+                         while (ggen === g) { await sleep(rnd(6000, 10000)); if (ggen !== g) break; lids(100, 46, 420); await sleep(380); if (ggen !== g) break; rest = { ...SLEEPY }; restLids(800); } },
+      async snore(g)   { rest = { ...SLEEPY }; restLids(700); look(0, .25, 700); await sleep(5000); endGesture(g); },
+    };
+    function setGesture(name) {
+      name = String(name || "").trim().toLowerCase();
+      if (name === gesture) return;
+      gesture = name; ggen++;
+      if (GESTURES[name]) { root.dataset.gesture = name; GESTURES[name](ggen); }
+      else { gesture = ""; delete root.dataset.gesture; rest = baseRest(); restLids(500); }
+    }
+    const LOOPS = { idle, listening, thinking, speaking, offline, sleeping };
+    const ALIAS = { processing: "thinking", responding: "speaking", unavailable: "offline", unknown: "offline" };  // assist_satellite state names
+    // A reply or a think that outlives any real one means the satellite is stuck; fall back to idle rather than talk forever.
+    const STUCK_MS = { thinking: 30000, speaking: 45000 };
+    let stuck = null;
+
+    function setState(s) {
+      const key = LOOPS[s] ? s : (LOOPS[ALIAS[s]] ? ALIAS[s] : "idle");
+      if (key === state) return;
+      state = key; gen++; root.dataset.state = key; LOOPS[key](gen);
+      clearTimeout(stuck);
+      if (STUCK_MS[key]) stuck = setTimeout(() => { if (state === key) setState("idle"); }, STUCK_MS[key]);
+    }
+    setState("offline");
+    return {
+      root, setState, setGesture,
+      resolve(s) { return LOOPS[s] ? s : (LOOPS[ALIAS[s]] ? ALIAS[s] : "idle"); },
+      get state() { return state; },
+      get gesture() { return gesture; },
+      get skin() { return root.dataset.skin; }, set skin(v) { if (SKINS.includes(v)) root.dataset.skin = v; },
+      get bg() { return root.dataset.bg; },     set bg(v) { if (BGS.includes(v)) root.dataset.bg = v; },
+      setDim(v) { set("--dim", Math.max(.1, Math.min(1, +v || 1))); },
+    };
+  }
+  return { build, SKINS, BGS, STATES };
+})();
+</script>
+
+<script id="face-app">
+(() => {
+  "use strict";
+  const q = new URLSearchParams(location.search);
+  // --- CONFIG (edit here, or pass as URL params) ---------------------------------------------
+  //   file:///home/pi/face.html?ha=192.168.0.229&token=XXXX&entity=assist_satellite.t5ai
+  //   &skin=beam|ring|iris|capsule  &bg=void|slate|dusk  &size=42  (eye size, % of the short screen edge)
+  //   &dim=.7 (always)  &night=22-7&nightdim=.5 (dim between 22:00 and 07:00)
+  //   &gesture=input_text.jarvis_gesture (entity the face gestures follow)  &sounds=on|off (sets input_boolean.jarvis_cheeky on connect)
+  //   &sleep=15 (minutes of quiet before the face falls asleep; 0 = never)  &sleepnight=5 (shorter wait inside the night window)
+  //   &demo (no HA, cycles states; tap top half = next skin, bottom half = next background; keys y/u/g/l/r/z/x/n/h/k/m = gestures, c = clear, s = sleep/wake)  &state=idle  &debug
+  const HA_HOST = q.get("ha")     || "192.168.0.229";
+  const HA_PORT = q.get("port")   || "8123";
+  const TOKEN   = (q.get("token") || "PASTE_TOKEN").trim();
+  const ENTITY  = q.get("entity") || "assist_satellite.usb_mic";
+  const GESTURE = q.get("gesture") || "input_text.jarvis_gesture";
+  const CHEEKY  = "input_boolean.jarvis_cheeky";
+  const SOUNDS  = (q.get("sounds") || "").toLowerCase();
+  const DEBUG   = q.has("debug"), DEMO = q.has("demo");
+  const SLEEP_MIN = q.has("sleep") ? +q.get("sleep") : 15;            // quiet minutes before sleeping (0 = never)
+  const CAPTIONS = (q.get("captions") || "on").toLowerCase() !== "off";  // &captions=off hides the heard/said text
+  const HEARD = "input_text.jarvis_last_heard", SAID = "input_text.jarvis_last_said";
+  const SLEEP_NIGHT_MIN = q.has("sleepnight") ? +q.get("sleepnight") : SLEEP_MIN;
+  // ---------------------------------------------------------------------------------------------
+  const status = document.getElementById("status"), hint = document.getElementById("hint");
+  if (DEBUG) status.classList.add("show");
+  const face = Face.build(document.getElementById("face"), { skin: q.get("skin") || "beam", bg: q.get("bg") || "void", size: q.get("size") });
+  const showQuiet = (off) => { hint.textContent = off ? "quiet mode" : ""; hint.style.display = off ? "block" : ""; hint.style.opacity = off ? ".45" : ""; };
+  const caption = document.getElementById("caption"); let captionTimer = null;
+  function showCaption(kind, text) {
+    if (!CAPTIONS || !text || text === "unknown") return;
+    clearTimeout(captionTimer);
+    caption.className = kind; caption.textContent = text;
+    requestAnimationFrame(() => caption.classList.add("show"));
+    captionTimer = setTimeout(() => caption.classList.remove("show"), kind === "said" ? 7000 : 4500);
+  }
+  document.body.style.background = getComputedStyle(face.root).backgroundColor;
+
+  // ---- brightness: fixed dim and/or a night window ----------------------------------------------
+  const DIM = +q.get("dim") || 1, NIGHT = q.get("night"), NIGHTDIM = +q.get("nightdim") || .5;
+  function isNight() {
+    const m = NIGHT && NIGHT.match(/^(\d{1,2})-(\d{1,2})$/);
+    if (!m) return false;
+    const h = new Date().getHours(), a = +m[1], b = +m[2];
+    return a < b ? (h >= a && h < b) : (h >= a || h < b);
+  }
+  function applyDim() { face.setDim(isNight() ? Math.min(DIM, NIGHTDIM) : DIM); }
+  applyDim(); setInterval(applyDim, 60000);
+
+  // ---- sleep: idle for a while -> "sleeping"; any listening/thinking/speaking wakes it --------
+  // Home Assistant keeps reporting idle while asleep, so idle never wakes the face; only a real
+  // interaction (or a gesture from HA) does. Offline always shows as offline.
+  let sleepTimer = null, asleep = false;
+  const sleepDelay = () => Math.max(0, (isNight() ? SLEEP_NIGHT_MIN : SLEEP_MIN) * 60000);
+  function armSleep() {
+    clearTimeout(sleepTimer);
+    const ms = sleepDelay(); if (!ms) return;
+    sleepTimer = setTimeout(() => {
+      if (face.state !== "idle") return;
+      face.setGesture("yawn");                                             // a yawn, then the lids drift shut
+      sleepTimer = setTimeout(() => { if (face.state === "idle") { asleep = true; face.setState("sleeping"); status.textContent = "sleeping"; pushAsleep(true); } }, 2600);
+    }, ms);
+  }
+  function wakeUp() { const was = asleep; asleep = false; clearTimeout(sleepTimer); if (was) pushAsleep(false); return was; }
+  function applyState(s) {
+    const key = face.resolve(s);
+    if (key === "idle") { if (asleep) return; face.setState("idle"); armSleep(); return; }
+    if (key === "offline") { wakeUp(); face.setState("offline"); return; }
+    const was = wakeUp(); face.setState(key); if (was) face.setGesture("morning");   // active: wake with a double blink + look around
+  }
+  function applyGesture(name) {
+    const n = String(name || "").trim().toLowerCase();
+    if (asleep && n && n !== "sleepy" && n !== "snore") { wakeUp(); face.setState("idle"); armSleep(); }
+    face.setGesture(n);
+  }
+
+  // ---- demo mode: no Home Assistant, just show off ------------------------------------------------
+  if (DEMO) {
+    document.body.classList.add("demo");
+    const cycle = ["idle", "listening", "thinking", "speaking"];
+    let i = 0; const lock = q.get("state");
+    const show = () => { hint.textContent = `${face.skin} · ${face.bg} · ${face.state}`; };
+    const step = () => { if (face.state === "sleeping" && !lock) return; face.setState(lock || cycle[i++ % cycle.length]); show(); };
+    step(); if (!lock) setInterval(step, 5000);
+    const next = (list, cur) => list[(list.indexOf(cur) + 1) % list.length];
+    document.addEventListener("pointerdown", (e) => {
+      if (e.clientY < innerHeight / 2) face.skin = next(Face.SKINS, face.skin); else face.bg = next(Face.BGS, face.bg);
+      document.body.style.background = getComputedStyle(face.root).backgroundColor; show();
+    });
+    document.addEventListener("keydown", (e) => {
+      const n = "1234".indexOf(e.key); if (n >= 0) face.skin = Face.SKINS[n];
+      if (e.key === "b") face.bg = next(Face.BGS, face.bg);
+      if (e.key === " ") { face.setState(next(cycle, face.state)); }
+      if (e.key === "s") { face.setState(face.state === "sleeping" ? "idle" : "sleeping"); if (face.state !== "sleeping") face.setGesture("morning"); }
+      if (e.key === "t") { showCaption("heard", "turn the office light on"); setTimeout(() => showCaption("said", "Turned on the office light."), 2200); }
+      const gk = { y: "yawn", u: "burp", g: "sigh", l: "laugh", r: "eyeroll", z: "sleepy", x: "snore", n: "sneeze", h: "hum", k: "look", m: "morning", c: "" };
+      if (e.key in gk) face.setGesture(gk[e.key]);
+      document.body.style.background = getComputedStyle(face.root).backgroundColor; show();
+    });
+    status.textContent = "demo";
+    return;
+  }
+
+  // ---- Home Assistant WebSocket ------------------------------------------------------------------
+  let ws, msgId = 1, retry = 0;
+  // ---- tell Home Assistant when the face is asleep, so the cheeky noises can hold off ---------
+  // input_boolean.jarvis_asleep is created on first connect if it does not exist yet.
+  const ASLEEP = "input_boolean.jarvis_asleep";
+  let asleepSent = null;
+  function pushAsleep(on) {
+    if (DEMO || !ws || ws.readyState !== 1 || asleepSent === on) return;
+    asleepSent = on;
+    ws.send(JSON.stringify({ id: msgId++, type: "call_service", domain: "input_boolean", service: on ? "turn_on" : "turn_off", target: { entity_id: ASLEEP } }));
+  }
+  const setOffline = () => { wakeUp(); face.setState("offline"); status.textContent = "offline"; };
+  function connect() {
+    if (TOKEN.startsWith("PASTE_")) { status.classList.add("show"); status.textContent = "set token in face.html"; face.setState("idle"); return; }
+    status.textContent = "connecting to " + HA_HOST;
+    ws = new WebSocket(`ws://${HA_HOST}:${HA_PORT}/api/websocket`);
+    const guard = setTimeout(() => { if (ws.readyState !== 1) { status.classList.add("show"); status.textContent = "cannot reach " + HA_HOST + ":" + HA_PORT; try { ws.close(); } catch (_) {} } }, 8000);
+    ws.onmessage = (ev) => {
+      const m = JSON.parse(ev.data);
+      if (m.type === "auth_required") ws.send(JSON.stringify({ type: "auth", access_token: TOKEN }));
+      else if (m.type === "auth_ok") {
+        clearTimeout(guard); retry = 0;
+        if (!DEBUG) status.classList.remove("show");   // hide the "cannot reach" note once we are back
+        ws.send(JSON.stringify({ id: msgId++, type: "get_states" }));
+        ws.send(JSON.stringify({ id: msgId++, type: "subscribe_events", event_type: "state_changed" }));
+        if (SOUNDS === "on" || SOUNDS === "off") ws.send(JSON.stringify({ id: msgId++, type: "call_service", domain: "input_boolean", service: "turn_" + SOUNDS, target: { entity_id: CHEEKY } }));
+        status.textContent = "connected";
+      }
+      else if (m.type === "auth_invalid") { status.classList.add("show"); status.textContent = "bad token (" + TOKEN.length + " chars)"; }
+      else if (m.type === "result" && Array.isArray(m.result)) { if (!m.result.some(s => s.entity_id === ASLEEP)) ws.send(JSON.stringify({ id: msgId++, type: "input_boolean/create", name: "Jarvis asleep", icon: "mdi:sleep" })); asleepSent = null; setTimeout(() => pushAsleep(asleep), 1500); const g = m.result.find(s => s.entity_id === GESTURE); applyGesture(g ? g.state : ""); const c = m.result.find(s => s.entity_id === CHEEKY); showQuiet(!!c && c.state === "off"); const e = m.result.find(s => s.entity_id === ENTITY); applyState(e ? e.state : "idle"); status.textContent = asleep ? "sleeping" : (e ? e.state : "idle"); }
+      else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === HEARD) showCaption("heard", m.event.data.new_state?.state);
+      else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === SAID) showCaption("said", m.event.data.new_state?.state);
+      else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === GESTURE) applyGesture(m.event.data.new_state?.state || "");
+      else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === CHEEKY) showQuiet(m.event.data.new_state?.state === "off");
+      else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === ENTITY) { const s = m.event.data.new_state.state; applyState(s); status.textContent = asleep ? "sleeping" : s; }
+    };
+    ws.onclose = () => { setOffline(); retry = Math.min(retry + 1, 6); setTimeout(connect, 500 * 2 ** retry); };
+    ws.onerror = () => { try { ws.close(); } catch (_) {} };
+  }
+  connect();
+})();
+</script>
+</body>
+</html>

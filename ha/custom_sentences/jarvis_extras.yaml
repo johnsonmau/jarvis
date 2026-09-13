@@ -1,0 +1,91 @@
+# Jarvis extras: "what did you hear", his own volume, reminders, music.
+# Handlers in intent_scripts.yaml (Jarvis* entries). Reload with
+# conversation.reload (sentences) and intent_script.reload.
+# The built-in intents already cover timers ("set a timer for 10 minutes",
+# "cancel the timer") and media ("pause", "resume", "next track", "set volume
+# to 50 percent" for the office speaker), so they are not repeated here.
+language: "en"
+lists:
+  level:
+    range:
+      from: 0
+      to: 100
+  minutes:
+    range:
+      from: 1
+      to: 720
+  hours:
+    range:
+      from: 1
+      to: 24
+  task:
+    wildcard: true
+intents:
+  JarvisWhatHeard:
+    data:
+      - sentences:
+          - "what did you [just] hear"
+          - "what did I [just] say"
+          - "what do you think I said"
+          - "repeat what I said"
+          - "what did you hear me say"
+  JarvisWhatSaid:
+    data:
+      - sentences:
+          - "what did you [just] say"
+          - "(repeat|say) that [again]"
+          - "come again"
+          - "say again"
+  JarvisVolumeUp:
+    data:
+      - sentences:
+          - "[a (bit|little)] louder [please]"
+          - "speak up"
+          - "turn (yourself|your volume) up"
+          - "[your] volume up"
+          - "I can't hear you"
+  JarvisVolumeDown:
+    data:
+      - sentences:
+          - "[a (bit|little)] (quieter|softer) [please]"
+          - "not so loud"
+          - "turn (yourself|your volume) down"
+          - "[your] volume down"
+          - "keep it down"
+  JarvisVolumeSet:
+    data:
+      - sentences:
+          - "set your volume to {level} [percent]"
+          - "[put] your volume (at|to) {level} [percent]"
+          - "speak at {level} percent"
+  JarvisVolumeGet:
+    data:
+      - sentences:
+          - "(what's|what is) your volume"
+          - "how loud are you"
+  JarvisRemind:
+    data:
+      - sentences:
+          - "remind me to {task} in {minutes} minute[s]"
+          - "remind me in {minutes} minute[s] to {task}"
+          - "(set|create|make) a reminder to {task} in {minutes} minute[s]"
+          - "in {minutes} minute[s] remind me to {task}"
+      - sentences:
+          - "remind me to {task} in {hours} hour[s]"
+          - "remind me in {hours} hour[s] to {task}"
+          - "(set|create|make) a reminder to {task} in {hours} hour[s]"
+          - "in {hours} hour[s] remind me to {task}"
+  JarvisNowPlaying:
+    data:
+      - sentences:
+          - "(what's|what is) playing"
+          - "what (song|track) is this"
+          - "what is this [song|track]"
+          - "who is this"
+          - "who sings this"
+  JarvisPlayMusic:
+    data:
+      - sentences:
+          - "(play|start|resume) [some|the] music"
+          - "put [some] music on"
+          - "music on"

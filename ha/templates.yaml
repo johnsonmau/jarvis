@@ -1,0 +1,47 @@
+# Template entities. Included from configuration.yaml (template: !include templates.yaml).
+# Reload without a restart: Developer tools > YAML > Template entities.
+- cover:
+    - name: "Garage Door"
+      unique_id: garage_door_cover
+      device_class: garage
+      # The overhead door's Aqara contact sensor: on = open.
+      state: "{{ 'open' if is_state('binary_sensor.0x00158d000ad99ffb_contact', 'on') else 'closed' }}"
+      availability: "{{ has_value('binary_sensor.0x00158d000ad99ffb_contact') }}"
+      # The opener is a single toggle (rest_command.garage_api), so only press it
+      # when the door is actually in the other state.
+      open_cover:
+        - condition: state
+          entity_id: binary_sensor.0x00158d000ad99ffb_contact
+          state: "off"
+        - action: script.garage_script
+      close_cover:
+        - condition: state
+          entity_id: binary_sensor.0x00158d000ad99ffb_contact
+          state: "on"
+        - action: script.garage_script
+
+# Daily forecast cache for the "what's the weather tomorrow" intent. intent_script
+# speech templates cannot read an action's response_variable, so this sensor
+# fetches the forecast every 30 min (and on the refresh_forecast event) and the
+# intent reads its "forecast" attribute.
+- triggers:
+    - trigger: time_pattern
+      minutes: "/30"
+    - trigger: homeassistant
+      event: start
+    - trigger: event
+      event_type: refresh_forecast
+  actions:
+    - action: weather.get_forecasts
+      target:
+        entity_id: weather.forecast_home
+      data:
+        type: daily
+      response_variable: fc
+  sensor:
+    - name: "Daily Forecast"
+      unique_id: daily_forecast_home
+      icon: mdi:weather-partly-cloudy
+      state: "{{ fc['weather.forecast_home'].forecast[0].condition }}"
+      attributes:
+        forecast: "{{ fc['weather.forecast_home'].forecast }}"

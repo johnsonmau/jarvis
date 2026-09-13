@@ -1,0 +1,22 @@
+# Forecast questions. The built-in "what's the weather" only gives current
+# conditions; this reads the daily forecast from weather.forecast_home (Met.no).
+# Handler: GetForecast in intent_scripts.yaml. Reload with conversation.reload.
+language: "en"
+lists:
+  forecast_day:
+    values:
+      - in: "today"
+        out: "0"
+      - in: "tomorrow"
+        out: "1"
+      - in: "(the day after tomorrow|in two days)"
+        out: "2"
+intents:
+  GetForecast:
+    data:
+      - sentences:
+          - "(what's|what is|how's|how is) the (weather|forecast) [going to be] [(for|on)] {forecast_day:day}"
+          - "(what's|what is) the (weather|forecast) [going to be] like {forecast_day:day}"
+          - "(will|is) it [going to] (rain|snow|be nice|be cold|be hot|be warm) {forecast_day:day}"
+          - "(do|will) I need (an umbrella|a jacket|a coat) {forecast_day:day}"
+          - "(what's|what is) the forecast"

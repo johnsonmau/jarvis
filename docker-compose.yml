@@ -1,0 +1,129 @@
+version: "3.8"
+# Wyoming voice services for a fully local Home Assistant pipeline.
+#
+# Runs on 192.168.0.229 (the Home Assistant host). Moved here from .149 for the
+# faster CPU. Add each one to Home Assistant as
+# Settings > Devices & services > Add Integration > Wyoming Protocol,
+# using this machine's IP and the port below.
+#
+#   docker compose up -d
+#
+# Models download on first start, so give it a few minutes.
+
+services:
+  whisper:
+    image: rhasspy/wyoming-whisper
+    container_name: wyoming-whisper
+    # small-int8 hears well (~2 s per utterance); base-int8 is ~1 s faster but
+    # mishears too much. Change the model here and: docker compose up -d whisper
+    command: --model small-int8 --language en --cpu-threads 6
+    volumes:
+      - ./whisper:/data
+    ports:
+      - "10300:10300"
+    restart: unless-stopped
+
+  # Parakeet (NVIDIA, via onnx-asr) is what the Local pipeline uses for
+  # speech-to-text now: ~0.3 s per command and far more accurate on this mic
+  # than whisper. Same image as whisper, different engine. Whisper stays up as
+  # a fallback you can pick in Settings > Voice assistants > Local.
+  parakeet:
+    image: rhasspy/wyoming-whisper
+    container_name: wyoming-parakeet
+    command: --stt-library onnx-asr --model nemo-parakeet-tdt-0.6b-v2 --language en --cpu-threads 6
+    volumes:
+      - ./whisper:/data
+    ports:
+      - "10301:10300"
+    restart: unless-stopped
+
+  piper:
+    image: rhasspy/wyoming-piper
+    container_name: wyoming-piper
+    # Note this voice is 22050 Hz. The satellite firmware resamples it.
+    command: --voice en_US-lessac-medium
+    volumes:
+      - ./piper:/data
+    ports:
+      - "10200:10200"
+    restart: unless-stopped
+
+  openwakeword:
+    image: rhasspy/wyoming-openwakeword
+    container_name: wyoming-openwakeword
+    # threshold/trigger-level raised from 0.5/1 to cut false wakes on room chatter.
+    command: --preload-model hey_jarvis --threshold 0.6 --trigger-level 2
+    ports:
+      - "10400:10400"
+    restart: unless-stopped
+
+  # The microphone. A Wyoming satellite reading the USB condenser mic on this
+  # box, waking on "hey jarvis" via the openwakeword container above. Replies
+  # are played straight from the pipeline's TTS (so the voice picked in Home
+  # Assistant is what you hear) through the host's system PulseAudio over TCP,
+  # the same sink MPD uses. A short chime plays when it stops listening (a
+  # wake chime clipped the first word, since the mic is muted while it plays). (The old path, --synthesize-command /reply.py -> webhook -> MPD,
+  # is still in satellite/reply.py if you ever want it back.) Needs: your user
+  # in the docker group, and the container in the host's audio group (gid 29).
+  satellite:
+    build: ./satellite
+    container_name: wyoming-satellite
+    devices:
+      - /dev/snd:/dev/snd
+    volumes:
+      - ./satellite/debug:/debug
+      - ./satellite/snd.sh:/app/snd.sh:ro   # plays replies at the volume jarvis-ctl sets
+      - ./satellite/data:/data
+    group_add:
+      - "29"
+    ports:
+      - "10700:10700"
+    depends_on:
+      - openwakeword
+    environment:
+      REPLY_WEBHOOK: http://192.168.0.229:8123/api/webhook/t5ai_reply
+    # Output volume is no longer fixed here: satellite/snd.sh reads the level that
+    # jarvis-ctl (below) writes, so "Jarvis, louder" works. MPD/alarms are untouched.
+    # To record every command to satellite/debug for tuning, add this line to the
+    # command below:  --debug-recording-dir /debug
+    command: >
+      --name usb-mic
+      --mic-command "arecord -D ${MIC_DEVICE:-plughw:CARD=Microphone,DEV=0} -r 16000 -c 1 -f S16_LE -t raw"
+      --mic-auto-gain 5 --mic-noise-suppression 2
+      --wake-uri tcp://openwakeword:10400 --wake-word-name hey_jarvis
+      --snd-command "/app/snd.sh"
+      --done-wav /app/sounds/done.wav --timer-finished-wav /app/sounds/timer_finished.wav --timer-finished-wav-repeat 3 2
+      --debug
+    restart: unless-stopped
+
+  # Watchdog + transcript relay (see satellite/micwatch.sh): restarts the
+  # satellite after the USB mic drops, and forwards what Jarvis heard/said to a
+  # Home Assistant webhook. Logs: docker logs -f jarvis-micwatch
+  micwatch:
+    image: docker:cli
+    container_name: jarvis-micwatch
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /proc/asound/cards:/host_cards:ro
+      - ./satellite/micwatch.sh:/micwatch.sh:ro
+    environment:
+      SATELLITE: wyoming-satellite
+      MIC_CARD: Microphone
+      HA_WEBHOOK: http://192.168.0.229:8123/api/webhook/jarvis-transcript
+    entrypoint: ["/bin/sh", "/micwatch.sh"]
+    depends_on:
+      - satellite
+    restart: unless-stopped
+
+  # Volume control for Jarvis's own voice: POST /volume?set=N|delta=N on :10710
+  # (Home Assistant rest_command.jarvis_volume). See satellite/jarvisctl.py.
+  ctl:
+    image: python:3.11-slim
+    container_name: jarvis-ctl
+    volumes:
+      - ./satellite/jarvisctl.py:/jarvisctl.py:ro
+      - ./satellite/data:/data
+    ports:
+      - "10710:10710"
+    command: ["python3", "/jarvisctl.py"]
+    restart: unless-stopped

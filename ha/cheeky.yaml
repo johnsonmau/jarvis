@@ -1,0 +1,38 @@
+# Jarvis personality bits: jokes with a laugh, replies to insults, and the
+# "cheeky mode" switch. Handlers in intent_scripts.yaml. Reload with
+# conversation.reload.
+language: "en"
+intents:
+  TellJoke:
+    data:
+      - sentences:
+          - "tell me (a|another) joke"
+          - "(tell|give) me (a|another) [short] joke [please]"
+          - "make me laugh"
+          - "(got|know) any [good] jokes"
+          - "say something funny"
+          - "joke"
+  InsultResponse:
+    data:
+      - sentences:
+          - "shut [the] (up|fuck up|hell up)"
+          - "shut up [jarvis]"
+          - "(you're|you are|your) (stupid|dumb|useless|an idiot|annoying|the worst)"
+          - "you suck"
+          - "(fuck|screw) you"
+          - "stop talking"
+          - "nobody asked [you]"
+  CheekyOff:
+    data:
+      - sentences:
+          - "(be quiet|quiet mode|quiet down|no more noises|stop the noises|knock it off)"
+          - "(be quiet|quiet mode|quiet down) for (an|one) hour"
+          - "(turn|switch) off (cheeky|silly) mode"
+          - "(behave|behave yourself)"
+  CheekyOn:
+    data:
+      - sentences:
+          - "(turn|switch) on (cheeky|silly) mode"
+          - "(cheeky|silly) mode [on]"
+          - "you can (make noise|talk|be yourself) again"
+          - "(never mind|nevermind) be (yourself|cheeky)"

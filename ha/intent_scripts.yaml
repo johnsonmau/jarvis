@@ -1,0 +1,233 @@
+# Handlers for the custom voice intents in custom_sentences/en/. Included from
+# configuration.yaml (intent_script: !include intent_scripts.yaml).
+# Reload without a restart: Developer tools > YAML > Intent scripts.
+AlarmArmAway:
+  action:
+    - action: alarm_control_panel.alarm_arm_away
+      target:
+        entity_id: alarm_control_panel.alarmo
+      data:
+        code: !secret alarm_code
+    - delay:
+        seconds: 2
+  speech:
+    text: >-
+      {% set s = states('alarm_control_panel.alarmo') %}
+      {% set os = state_attr('alarm_control_panel.alarmo', 'open_sensors') %}
+      {% set names = (os.values() | list) if os is mapping else (os | list if os else []) %}
+      {% if s in ['arming', 'armed_away'] %}Arming the alarm in away mode.
+      {% elif s == 'armed_home' %}The alarm is already armed in home mode. Disarm it first to switch.
+      {% elif names %}I can't arm the alarm, {{ names | map('lower') | join(' and ') }} {{ 'is' if names | count == 1 else 'are' }} open.
+      {% else %}Sorry, I could not arm the alarm. Check the alarm code in secrets.yaml.{% endif %}
+AlarmArmHome:
+  action:
+    - action: alarm_control_panel.alarm_arm_home
+      target:
+        entity_id: alarm_control_panel.alarmo
+      data:
+        code: !secret alarm_code
+    - delay:
+        seconds: 2
+  speech:
+    text: >-
+      {% set s = states('alarm_control_panel.alarmo') %}
+      {% set os = state_attr('alarm_control_panel.alarmo', 'open_sensors') %}
+      {% set names = (os.values() | list) if os is mapping else (os | list if os else []) %}
+      {% if s in ['arming', 'armed_home'] %}Arming the alarm in home mode.
+      {% elif s == 'armed_away' %}The alarm is already armed in away mode. Disarm it first to switch.
+      {% elif names %}I can't arm the alarm, {{ names | map('lower') | join(' and ') }} {{ 'is' if names | count == 1 else 'are' }} open.
+      {% else %}Sorry, I could not arm the alarm. Check the alarm code in secrets.yaml.{% endif %}
+AlarmDisarm:
+  action:
+    - action: alarm_control_panel.alarm_disarm
+      target:
+        entity_id: alarm_control_panel.alarmo
+      data:
+        code: !secret alarm_code
+    - delay:
+        seconds: 1
+  speech:
+    text: >-
+      {% if is_state('alarm_control_panel.alarmo', 'disarmed') %}The alarm is disarmed.
+      {% else %}Sorry, I could not disarm the alarm.{% endif %}
+AlarmStatus:
+  speech:
+    text: >-
+      {% set s = states('alarm_control_panel.alarmo') %}
+      {% set words = {'disarmed': 'disarmed', 'armed_away': 'armed in away mode',
+                      'armed_home': 'armed in home mode', 'arming': 'arming',
+                      'pending': 'pending', 'triggered': 'triggered'} %}
+      The alarm is {{ words.get(s, s) }}.
+GetAreaTemperature:
+  speech:
+    text: >-
+      {% set ns = namespace(v=none) %}
+      {% if (area_name(area) or area) | lower in ['outside', 'outdoors', 'out'] %}
+        {% set ns.v = state_attr('weather.forecast_home', 'temperature') %}
+      {% endif %}
+      {% for e in area_entities(area) if ns.v is none and e.startswith('sensor.')
+            and state_attr(e, 'device_class') == 'temperature'
+            and states(e) not in ['unknown', 'unavailable'] %}
+        {% if ns.v is none %}{% set ns.v = states(e) | float(none) %}{% endif %}
+      {% endfor %}
+      {% set nm = area_name(area) or area %}
+      {% if ns.v is none %}I don't have a temperature sensor in the {{ nm | lower }}.
+      {% elif nm | lower in ['outside', 'outdoors', 'out'] %}It's {{ ns.v | round(0) | int }} degrees outside.
+      {% else %}The {{ nm | lower }} is {{ ns.v | round(0) | int }} degrees.{% endif %}
+GarageDoorState:
+  speech:
+    text: >-
+      {% set s = states('cover.garage_door') %}
+      {% if s in ['unknown', 'unavailable'] %}I can't see the garage door sensor right now.
+      {% else %}{{ 'Yes' if s == asked else 'No' }}, the garage door is {{ s }}.{% endif %}
+GarageSideDoorState:
+  speech:
+    text: >-
+      {% set s = 'open' if is_state('binary_sensor.garage_door_sensor_contact', 'on') else 'closed' %}
+      {{ 'Yes' if s == asked else 'No' }}, the garage side door is {{ s }}.
+GetForecast:
+  speech:
+    text: >-
+      {% set i = (day | default('1')) | int %}
+      {% set f = state_attr('sensor.daily_forecast', 'forecast') or [] %}
+      {% set nice = {'sunny': 'sunny', 'clear-night': 'clear', 'partlycloudy': 'partly cloudy',
+                     'cloudy': 'cloudy', 'rainy': 'rainy', 'pouring': 'pouring rain', 'snowy': 'snowy',
+                     'snowy-rainy': 'a mix of snow and rain', 'fog': 'foggy', 'windy': 'windy',
+                     'windy-variant': 'windy', 'lightning': 'stormy', 'lightning-rainy': 'stormy with rain',
+                     'hail': 'hail', 'exceptional': 'unusual'} %}
+      {% if f | count > i %}
+        {% set d = f[i] %}
+        {% set when = ['Today', 'Tomorrow', 'The day after tomorrow'][i] %}
+        {{ when }} looks {{ nice.get(d.condition, d.condition) }}, with a high of {{ d.temperature | round(0) | int }}
+        {%- if d.templow is defined and d.templow is not none %} and a low of {{ d.templow | round(0) | int }}{% endif %}
+        {%- if d.precipitation is defined and d.precipitation and d.precipitation > 0 %}, and some {{ 'snow' if d.condition in ['snowy', 'snowy-rainy'] else 'rain' }} expected{% endif %}.
+      {% else %}I don't have the forecast yet, ask me again in a minute.{% endif %}
+TellJoke:
+  action:
+    - action: conversation.process
+      data:
+        agent_id: conversation.jarvis
+        text: "Tell me a short, funny one-liner joke. Reply with only the joke, at most 25 words, no preamble."
+      response_variable: j
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_joke
+      data:
+        value: "{{ (j.response.speech.plain.speech | default('I am out of jokes.')) | replace('
+', ' ') | truncate(250, true, '') }}"
+    - action: script.turn_on
+      target:
+        entity_id: script.jarvis_laugh_later
+      data:
+        variables:
+          words: "{{ states('input_text.jarvis_joke') | wordcount }}"
+  speech:
+    text: "{{ states('input_text.jarvis_joke') }}"
+InsultResponse:
+  action:
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_gesture
+      data:
+        value: eyeroll
+  speech:
+    text: "{{ ['Rude.', 'Wow.', 'Noted.', 'That is fair.', 'Charming.', 'And a good day to you too.'] | random }}"
+CheekyOff:
+  action:
+    - action: input_boolean.turn_off
+      target:
+        entity_id: input_boolean.jarvis_cheeky
+    - action: script.turn_on
+      target:
+        entity_id: script.jarvis_cheeky_resume_later
+  speech:
+    text: "{{ ['Going quiet.', 'Fine. Silence it is.', 'Muting the fun for an hour.'] | random }}"
+CheekyOn:
+  action:
+    - action: input_boolean.turn_on
+      target:
+        entity_id: input_boolean.jarvis_cheeky
+  speech:
+    text: "{{ ['Back to my usual self.', 'Finally.', 'Cheeky mode on.'] | random }}"
+
+# ---- Jarvis extras (13 Sep 2026): heard/said, volume, reminders, music ----------
+# input_text.jarvis_last_heard / jarvis_prev_heard / jarvis_last_said are filled by
+# the jarvis-micwatch container via the jarvis-transcript webhook.
+JarvisWhatHeard:
+  speech:
+    text: >-
+      {% set l = states('input_text.jarvis_last_heard') %}
+      {% set p = states('input_text.jarvis_prev_heard') %}
+      {% set asked = ('hear' in l | lower) or ('say' in l | lower) or ('said' in l | lower) %}
+      {% set t = p if asked else l %}
+      {% if t in ['', 'unknown', 'unavailable'] %}I haven't heard anything yet.
+      {% else %}I heard: {{ t }}{% endif %}
+JarvisWhatSaid:
+  speech:
+    text: >-
+      {% set t = states('input_text.jarvis_last_said') %}
+      {% if t in ['', 'unknown', 'unavailable'] %}I haven't said anything yet.
+      {% else %}I said: {{ t }}{% endif %}
+JarvisVolumeUp:
+  action:
+    - action: rest_command.jarvis_volume
+      data:
+        query: "?delta=10"
+      response_variable: r
+  speech:
+    text: "{{ 'Volume ' ~ r.content.volume ~ ' percent.' if r is defined and r.content is defined else 'I could not change my volume.' }}"
+JarvisVolumeDown:
+  action:
+    - action: rest_command.jarvis_volume
+      data:
+        query: "?delta=-10"
+      response_variable: r
+  speech:
+    text: "{{ 'Volume ' ~ r.content.volume ~ ' percent.' if r is defined and r.content is defined else 'I could not change my volume.' }}"
+JarvisVolumeSet:
+  action:
+    - action: rest_command.jarvis_volume
+      data:
+        query: "?set={{ level }}"
+      response_variable: r
+  speech:
+    text: "{{ 'Volume ' ~ r.content.volume ~ ' percent.' if r is defined and r.content is defined else 'I could not change my volume.' }}"
+JarvisVolumeGet:
+  action:
+    - action: rest_command.jarvis_volume_get
+      response_variable: r
+  speech:
+    text: "{{ 'My volume is ' ~ r.content.volume ~ ' percent.' if r is defined and r.content is defined else 'I am not sure of my volume right now.' }}"
+JarvisRemind:
+  action:
+    - action: script.turn_on
+      target:
+        entity_id: script.jarvis_reminder
+      data:
+        variables:
+          task: "{{ task }}"
+          seconds: "{{ (minutes | default(0) | int) * 60 + (hours | default(0) | int) * 3600 }}"
+  speech:
+    text: >-
+      {% set m = minutes | default(0) | int %}{% set h = hours | default(0) | int %}
+      Okay, I'll remind you to {{ task }} in {{ h ~ ' hour' ~ ('s' if h != 1 else '') if h else m ~ ' minute' ~ ('s' if m != 1 else '') }}.
+JarvisNowPlaying:
+  speech:
+    text: >-
+      {% set p = 'media_player.music_player_daemon' %}
+      {% set s = states(p) %}
+      {% set t = state_attr(p, 'media_title') %}{% set a = state_attr(p, 'media_artist') %}
+      {% if s == 'playing' and t %}This is {{ t }}{% if a %} by {{ a }}{% endif %}.
+      {% elif s == 'paused' and t %}{{ t }}{% if a %} by {{ a }}{% endif %} is paused.
+      {% elif s in ['off', 'unavailable', 'unknown'] %}The office speaker is off.
+      {% else %}Nothing is playing.{% endif %}
+JarvisPlayMusic:
+  action:
+    - action: media_player.media_play
+      target:
+        entity_id: media_player.music_player_daemon
+  speech:
+    text: >-
+      {% set p = 'media_player.music_player_daemon' %}
+      {% if state_attr(p, 'media_title') %}Playing {{ state_attr(p, 'media_title') }}.
+      {% else %}The office speaker's queue is empty. Add something in MPD first.{% endif %}
