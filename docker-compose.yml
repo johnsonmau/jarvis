@@ -91,6 +91,7 @@ services:
       --mic-command "arecord -D ${MIC_DEVICE:-plughw:CARD=Microphone,DEV=0} -r 16000 -c 1 -f S16_LE -t raw"
       --mic-auto-gain 5 --mic-noise-suppression 2
       --wake-uri tcp://openwakeword:10400 --wake-word-name hey_jarvis
+      --follow-up-seconds 6
       --snd-command "/app/snd.sh"
       --done-wav /app/sounds/done.wav --timer-finished-wav /app/sounds/timer_finished.wav --timer-finished-wav-repeat 3 2
       --debug

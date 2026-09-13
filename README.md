@@ -273,3 +273,26 @@ This directory is a git repo (init 13 Sep 2026). Ignored: `.env`, models
 `face/face.html` (has the HA token; `face/face.template.html` is the committed
 copy). To push to Gitea: create an empty repo there, then
 `git remote add origin http://192.168.0.229:4000/<user>/jarvis.git && git push -u origin main`.
+
+## Follow-up listening, aliases (13 Sep 2026, afternoon)
+
+**Follow-up without the wake word.** Home Assistant only continues a
+conversation when an LLM reply ends with a question, never after an intent, so
+the satellite does it itself: `satellite/patch_followup.py` is applied to
+wyoming-satellite at image build (Dockerfile) and adds `--follow-up-seconds N`
+(6 in docker-compose.yml). After Jarvis finishes a spoken reply he keeps the
+pipeline open for N seconds; say the next thing without "hey Jarvis". The mic
+also still feeds the wake-word service during that window, so "hey Jarvis"
+keeps working. Silence for N seconds -> back to wake word (the log says
+"Follow-up: no speech, back to wake word"). Announcements (reminders, burps)
+do not open a window; only real replies do. Set to 0 to disable. Rebuild after
+changing the patch: `docker compose build satellite && docker compose up -d satellite`.
+
+**Aliases** (`ha/ha_aliases.py`, applied to core.entity_registry with HA
+stopped): "office light(s)", "overhead light", "lamp"/"desk lamp", "bedroom
+TV" / "bedroom T V" (how Parakeet spells it) / "bedroom television", same for
+the living room TV, "speaker", "outside/outdoor/porch lights". Add more in
+Settings > Voice assistants > Expose > entity > Aliases.
+
+**Volume phrases** now also match "lower/raise your volume", "turn your voice
+down", "you're too loud", "speak louder", etc.

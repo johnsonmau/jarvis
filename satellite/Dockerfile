@@ -12,5 +12,8 @@ RUN git clone --depth 1 --branch v1.4.1 https://github.com/rhasspy/wyoming-satel
 RUN apt-get update && apt-get install -y --no-install-recommends pulseaudio-utils \
  && rm -rf /var/lib/apt/lists/*
 COPY reply.py /reply.py
+# Follow-up listening after a reply (see patch_followup.py)
+COPY patch_followup.py /tmp/patch_followup.py
+RUN python3 /tmp/patch_followup.py /app
 EXPOSE 10700
 ENTRYPOINT ["/app/script/run", "--uri", "tcp://0.0.0.0:10700", "--no-zeroconf"]
