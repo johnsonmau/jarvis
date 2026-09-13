@@ -352,6 +352,11 @@ window.Face = (() => {
   const SLEEP_MIN = q.has("sleep") ? +q.get("sleep") : 15;            // quiet minutes before sleeping (0 = never)
   const CAPTIONS = (q.get("captions") || "on").toLowerCase() !== "off";  // &captions=off hides the heard/said text
   const HEARD = "input_text.jarvis_last_heard", SAID = "input_text.jarvis_last_said";
+  // The satellite reports its own listening state here (via jarvis-micwatch). Home Assistant's
+  // assist_satellite state drops back to idle ~2 s into a follow-up window (a TTS safety timer),
+  // so while this flag is on, an "idle" from HA is shown as listening.
+  const LISTENING = "input_boolean.jarvis_listening";
+  let satListening = false, lastHaState = "idle";
   const SLEEP_NIGHT_MIN = q.has("sleepnight") ? +q.get("sleepnight") : SLEEP_MIN;
   // ---------------------------------------------------------------------------------------------
   const status = document.getElementById("status"), hint = document.getElementById("hint");
@@ -395,10 +400,17 @@ window.Face = (() => {
   }
   function wakeUp() { const was = asleep; asleep = false; clearTimeout(sleepTimer); if (was) pushAsleep(false); return was; }
   function applyState(s) {
+    lastHaState = face.resolve(s);
+    if (lastHaState === "idle" && satListening) s = "listening";
     const key = face.resolve(s);
     if (key === "idle") { if (asleep) return; face.setState("idle"); armSleep(); return; }
     if (key === "offline") { wakeUp(); face.setState("offline"); return; }
     const was = wakeUp(); face.setState(key); if (was) face.setGesture("morning");   // active: wake with a double blink + look around
+  }
+  function applyListening(on) {
+    satListening = on;
+    if (on && lastHaState === "idle") applyState("idle");            // becomes listening via the flag
+    else if (!on && face.state === "listening" && lastHaState === "idle") applyState("idle");
   }
   function applyGesture(name) {
     const n = String(name || "").trim().toLowerCase();
@@ -462,7 +474,8 @@ window.Face = (() => {
         status.textContent = "connected";
       }
       else if (m.type === "auth_invalid") { status.classList.add("show"); status.textContent = "bad token (" + TOKEN.length + " chars)"; }
-      else if (m.type === "result" && Array.isArray(m.result)) { if (!m.result.some(s => s.entity_id === ASLEEP)) ws.send(JSON.stringify({ id: msgId++, type: "input_boolean/create", name: "Jarvis asleep", icon: "mdi:sleep" })); asleepSent = null; setTimeout(() => pushAsleep(asleep), 1500); const g = m.result.find(s => s.entity_id === GESTURE); applyGesture(g ? g.state : ""); const c = m.result.find(s => s.entity_id === CHEEKY); showQuiet(!!c && c.state === "off"); const e = m.result.find(s => s.entity_id === ENTITY); applyState(e ? e.state : "idle"); status.textContent = asleep ? "sleeping" : (e ? e.state : "idle"); }
+      else if (m.type === "result" && Array.isArray(m.result)) { if (!m.result.some(s => s.entity_id === ASLEEP)) ws.send(JSON.stringify({ id: msgId++, type: "input_boolean/create", name: "Jarvis asleep", icon: "mdi:sleep" })); asleepSent = null; setTimeout(() => pushAsleep(asleep), 1500); const li = m.result.find(s => s.entity_id === LISTENING); satListening = !!li && li.state === "on"; const g = m.result.find(s => s.entity_id === GESTURE); applyGesture(g ? g.state : ""); const c = m.result.find(s => s.entity_id === CHEEKY); showQuiet(!!c && c.state === "off"); const e = m.result.find(s => s.entity_id === ENTITY); applyState(e ? e.state : "idle"); status.textContent = asleep ? "sleeping" : (e ? e.state : "idle"); }
+      else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === LISTENING) applyListening(m.event.data.new_state?.state === "on");
       else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === HEARD) showCaption("heard", m.event.data.new_state?.state);
       else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === SAID) showCaption("said", m.event.data.new_state?.state);
       else if (m.type === "event" && m.event?.event_type === "state_changed" && m.event.data.entity_id === GESTURE) applyGesture(m.event.data.new_state?.state || "");

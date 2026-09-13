@@ -327,3 +327,8 @@ accept "value"/"bound", which is what Parakeet usually hears for "volume".
   `curl -X POST -H 'Content-Type: application/json' -d '{"text":"turn on the office light"}' http://192.168.0.229:8123/api/webhook/jarvis-intent-test`
   The intent agent's reply lands in `input_text.jarvis_last_said` as "TEST: ...".
   Add `"agent":"conversation.jarvis"` to the JSON to go through Ollama instead.
+
+**Listening pill during follow-up (13 Sep, late):** Home Assistant arms a TTS
+safety timer after every reply that forces `assist_satellite.usb_mic` back to
+idle ~2 s later, even when a follow-up run has already started, so the face
+cannot rely on that state. `jarvis-micwatch` now relays the satellites own

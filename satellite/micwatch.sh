@@ -4,10 +4,13 @@
 #     reattaches but wake-word detection has been seen to stay dead. On a mic
 #     disconnect, wait for the card to be back on the host, then restart the
 #     satellite container.
-#  2) Transcript relay. Every "transcript" (what Jarvis heard) and "synthesize"
-#     (what he replied) event is POSTed to a Home Assistant webhook, which stores
-#     them in input_text.jarvis_last_heard / jarvis_last_said. That feeds the
-#     "what did you hear" intent and the caption on the face.
+#  2) Relay. Every "transcript" (what Jarvis heard) and "synthesize" (what he
+#     replied) event is POSTed to a Home Assistant webhook, which stores them in
+#     input_text.jarvis_last_heard / jarvis_last_said (the "what did you hear"
+#     intent and the caption on the face). The satellite's own listening state
+#     goes the same way into input_boolean.jarvis_listening: Home Assistant's
+#     assist_satellite state flips back to idle ~2 s into a follow-up window
+#     (its TTS safety timer), so the face cannot rely on it for the pill.
 SAT=${SATELLITE:-wyoming-satellite}
 CARD=${MIC_CARD:-Microphone}
 COOLDOWN=${COOLDOWN:-90}
@@ -32,6 +35,10 @@ docker logs -f --since 5s "$SAT" 2>&1 | while IFS= read -r line; do
       t=$(printf '%s' "$line" | sed -n "s/.*'text': [\"']\(.*\)[\"'], 'voice'.*/\1/p")
       [ -n "$t" ] && post said "$t"
       continue ;;
+    *"Streaming audio"*|*"Follow-up: listening"*)
+      post listening on; continue ;;
+    *"Waiting for wake word"*|*"Follow-up: no speech"*|*"Satellite is paused"*)
+      post listening off; continue ;;
     *"Mic service disconnected"*|*"audio open error"*|*"read error: No such device"*) ;;
     *) continue ;;
   esac
