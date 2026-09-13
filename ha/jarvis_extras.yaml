@@ -13,6 +13,11 @@ skip_words:
   - "jarvis"
   - "please"
 lists:
+  # Parakeet often hears "volume" as "value" or "bound"; accept them all
+  vol:
+    values:
+      - in: "(volume|volumes|value|values|bound|voice|loudness)"
+        out: "volume"
   pre:
     values:
       - in: "[(can|could|would|will) you] [please] [jarvis]"
@@ -57,8 +62,8 @@ intents:
           - "{pre} [a (bit|little)] louder {post}"
           - "{pre} speak (up|louder) {post}"
           - "{pre} (turn|bring) (yourself|your volume|your voice) up [a (bit|little)] {post}"
-          - "{pre} (raise|increase|boost) your (volume|voice) [a (bit|little)] {post}"
-          - "{pre} [your] volume up {post}"
+          - "{pre} (raise|increase|boost) your {vol} [a (bit|little)] {post}"
+          - "{pre} [your] {vol} up {post}"
           - "I can't hear you"
           - "(you're|you are) [being] too quiet"
   JarvisVolumeDown:
@@ -67,21 +72,21 @@ intents:
           - "{pre} [a (bit|little)] (quieter|softer) {post}"
           - "{pre} not so loud {post}"
           - "{pre} (turn|bring) (yourself|your volume|your voice) down [a (bit|little)] {post}"
-          - "{pre} (lower|reduce|decrease|drop) your (volume|voice) [a (bit|little) [bit]] {post}"
-          - "{pre} [your] volume down {post}"
+          - "{pre} (lower|reduce|decrease|drop) your {vol} [a (bit|little) [bit]] {post}"
+          - "{pre} [your] {vol} down {post}"
           - "{pre} keep it down {post}"
           - "(you're|you are) [being] too loud"
           - "{pre} speak (quieter|softer|more quietly) {post}"
   JarvisVolumeSet:
     data:
       - sentences:
-          - "{pre} set your volume to {level} [percent] {post}"
-          - "{pre} [put] your volume (at|to) {level} [percent] {post}"
+          - "{pre} set your {vol} to {level} [percent] {post}"
+          - "{pre} [put] your {vol} (at|to) {level} [percent] {post}"
           - "{pre} speak at {level} percent {post}"
   JarvisVolumeGet:
     data:
       - sentences:
-          - "(what's|what is) your volume"
+          - "(what's|what is) your {vol}"
           - "how loud are you"
   JarvisRemind:
     data:

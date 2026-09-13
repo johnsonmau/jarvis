@@ -74,6 +74,7 @@ services:
       - ./satellite/debug:/debug
       - ./satellite/snd.sh:/app/snd.sh:ro   # plays replies at the volume jarvis-ctl sets
       - ./satellite/data:/data
+      - ./satellite/sounds/followup.wav:/app/sounds/followup.wav:ro   # soft tick when the follow-up window opens
     group_add:
       - "29"
     ports:
@@ -91,7 +92,7 @@ services:
       --mic-command "arecord -D ${MIC_DEVICE:-plughw:CARD=Microphone,DEV=0} -r 16000 -c 1 -f S16_LE -t raw"
       --mic-auto-gain 5 --mic-noise-suppression 2
       --wake-uri tcp://openwakeword:10400 --wake-word-name hey_jarvis
-      --follow-up-seconds 8
+      --follow-up-seconds 8 --follow-up-wav /app/sounds/followup.wav
       --snd-command "/app/snd.sh"
       --done-wav /app/sounds/done.wav --timer-finished-wav /app/sounds/timer_finished.wav --timer-finished-wav-repeat 3 2
       --debug

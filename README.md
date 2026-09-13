@@ -299,3 +299,9 @@ Settings > Voice assistants > Expose > entity > Aliases.
 
 **Volume phrases** now also match "lower/raise your volume", "turn your voice
 down", "you're too loud", "speak louder", etc.
+
+**Follow-up cue (13 Sep, evening):** when the window opens the speaker plays a
+soft two-note tick (`satellite/sounds/followup.wav`, `--follow-up-wav`, mic
+stays open) and the face shows a pulsing "LISTENING" pill at the top for as
+long as the satellite is listening (`face_listen_patch.py`). Volume phrases
+accept "value"/"bound", which is what Parakeet usually hears for "volume".

@@ -28,6 +28,9 @@ patch(f"{root}/wyoming_satellite/settings.py", [(
 
     follow_up_seconds: Optional[float] = None
     """After a spoken reply, keep listening this many seconds without the wake word."""
+
+    follow_up_wav: Optional[str] = None
+    """WAV played (mic stays open) when the follow-up window opens."""
 ''')])
 
 # ---- CLI: --follow-up-seconds -------------------------------------------------
@@ -51,6 +54,10 @@ patch(f"{root}/wyoming_satellite/__main__.py", [(
         default=0.0,
         help="After a spoken reply, keep listening this many seconds without the wake word (default: 0 = off)",
     )
+    parser.add_argument(
+        "--follow-up-wav",
+        help="WAV file to play when the follow-up window opens (microphone is not muted)",
+    )
 '''), (
 '''            refractory_seconds=(
                 args.wake_refractory_seconds
@@ -67,6 +74,7 @@ patch(f"{root}/wyoming_satellite/__main__.py", [(
             follow_up_seconds=(
                 args.follow_up_seconds if args.follow_up_seconds > 0 else None
             ),
+            follow_up_wav=args.follow_up_wav,
         ),
 ''')])
 
@@ -172,6 +180,8 @@ patch(f"{root}/wyoming_satellite/satellite.py", [
         _LOGGER.info("Follow-up: listening %.1f s without wake word", seconds)
         await self._send_run_pipeline()
         await self.trigger_streaming_start()
+        if self.settings.wake.follow_up_wav:
+            await self._play_wav(self.settings.wake.follow_up_wav, mute_microphone=False)
         self._cancel_follow_up_timer()
         self._follow_up_task = asyncio.create_task(self._follow_up_timeout(seconds))
 
