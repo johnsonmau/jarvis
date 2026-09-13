@@ -1,5 +1,9 @@
 # Local voice services
 
+![The Jarvis face on the office display: iris skin, dusk background, idle](docs/face-iris.png)
+
+*Jarvis on the 7" display (iris skin, dusk background). Face source: `face/`.*
+
 Part A of the satellite build. Start these, add them to Home Assistant, then
 point Home Assistant at the board.
 
