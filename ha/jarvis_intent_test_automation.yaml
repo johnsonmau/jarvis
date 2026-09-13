@@ -1,0 +1,28 @@
+- id: jarvis_intent_test
+  alias: Jarvis - intent test hook
+  description: 'Debug aid: POST {"text": "..."} to /api/webhook/jarvis-intent-test and the
+    reply from the local intent agent lands in input_text.jarvis_last_said as "TEST: ...".
+    Local network only.'
+  triggers:
+  - trigger: webhook
+    webhook_id: jarvis-intent-test
+    allowed_methods:
+    - POST
+    local_only: true
+  conditions:
+  - condition: template
+    value_template: '{{ trigger.json is defined and trigger.json.text is defined }}'
+  actions:
+  - action: conversation.process
+    data:
+      text: '{{ trigger.json.text }}'
+      agent_id: '{{ trigger.json.agent | default(''conversation.home_assistant'') }}'
+      language: en
+    response_variable: r
+  - action: input_text.set_value
+    target:
+      entity_id: input_text.jarvis_last_said
+    data:
+      value: 'TEST: {{ (r.response.response_type ~ '' | '' ~ (r.response.speech.plain.speech | default(''(no speech)''))) | truncate(250, true, '''') }}'
+  mode: queued
+  max: 5

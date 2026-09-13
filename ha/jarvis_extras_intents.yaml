@@ -1,0 +1,108 @@
+# ---- Jarvis extras (13 Sep 2026): heard/said, volume, reminders, music ----------
+# input_text.jarvis_last_heard / jarvis_prev_heard / jarvis_last_said are filled by
+# the jarvis-micwatch container via the jarvis-transcript webhook.
+JarvisWhatHeard:
+  speech:
+    text: >-
+      {% set l = states('input_text.jarvis_last_heard') %}
+      {% set p = states('input_text.jarvis_prev_heard') %}
+      {% set asked = ('hear' in l | lower) or ('say' in l | lower) or ('said' in l | lower) %}
+      {% set t = p if asked else l %}
+      {% if t in ['', 'unknown', 'unavailable'] %}I haven't heard anything yet.
+      {% else %}I heard: {{ t }}{% endif %}
+JarvisWhatSaid:
+  speech:
+    text: >-
+      {% set t = states('input_text.jarvis_last_said') %}
+      {% if t in ['', 'unknown', 'unavailable'] %}I haven't said anything yet.
+      {% else %}I said: {{ t }}{% endif %}
+JarvisVolumeUp:
+  action:
+    - action: rest_command.jarvis_volume
+      data:
+        query: "?delta=10"
+      response_variable: r
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_volume
+      data:
+        value: "{{ r.content.volume if r is defined and r.content is defined and r.content.volume is defined else 'error' }}"
+  speech:
+    text: "{{ 'I could not change my volume.' if states('input_text.jarvis_volume') == 'error' else 'Volume ' ~ states('input_text.jarvis_volume') ~ ' percent.' }}"
+JarvisVolumeDown:
+  action:
+    - action: rest_command.jarvis_volume
+      data:
+        query: "?delta=-10"
+      response_variable: r
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_volume
+      data:
+        value: "{{ r.content.volume if r is defined and r.content is defined and r.content.volume is defined else 'error' }}"
+  speech:
+    text: "{{ 'I could not change my volume.' if states('input_text.jarvis_volume') == 'error' else 'Volume ' ~ states('input_text.jarvis_volume') ~ ' percent.' }}"
+JarvisVolumeSet:
+  action:
+    - action: rest_command.jarvis_volume
+      data:
+        query: "?set={{ level }}"
+      response_variable: r
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_volume
+      data:
+        value: "{{ r.content.volume if r is defined and r.content is defined and r.content.volume is defined else 'error' }}"
+  speech:
+    text: "{{ 'I could not change my volume.' if states('input_text.jarvis_volume') == 'error' else 'Volume ' ~ states('input_text.jarvis_volume') ~ ' percent.' }}"
+JarvisVolumeGet:
+  action:
+    - action: rest_command.jarvis_volume_get
+      response_variable: r
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.jarvis_volume
+      data:
+        value: "{{ r.content.volume if r is defined and r.content is defined and r.content.volume is defined else 'error' }}"
+  speech:
+    text: "{{ 'I am not sure of my volume right now.' if states('input_text.jarvis_volume') == 'error' else 'My volume is ' ~ states('input_text.jarvis_volume') ~ ' percent.' }}"
+JarvisRemind:
+  action:
+    - action: script.turn_on
+      target:
+        entity_id: script.jarvis_reminder
+      data:
+        variables:
+          task: "{{ task }}"
+          seconds: "{{ (minutes | default(0) | int) * 60 + (hours | default(0) | int) * 3600 }}"
+  speech:
+    text: >-
+      {% set m = minutes | default(0) | int %}{% set h = hours | default(0) | int %}
+      Okay, I'll remind you to {{ task }} in {{ h ~ ' hour' ~ ('s' if h != 1 else '') if h else m ~ ' minute' ~ ('s' if m != 1 else '') }}.
+JarvisNowPlaying:
+  speech:
+    text: >-
+      {% set p = 'media_player.music_player_daemon' %}
+      {% set s = states(p) %}
+      {% set t = state_attr(p, 'media_title') %}{% set a = state_attr(p, 'media_artist') %}
+      {% if s == 'playing' and t %}This is {{ t }}{% if a %} by {{ a }}{% endif %}.
+      {% elif s == 'paused' and t %}{{ t }}{% if a %} by {{ a }}{% endif %} is paused.
+      {% elif s in ['off', 'unavailable', 'unknown'] %}The office speaker is off.
+      {% else %}Nothing is playing.{% endif %}
+JarvisPlayMusic:
+  action:
+    - action: media_player.media_play
+      target:
+        entity_id: media_player.music_player_daemon
+  speech:
+    text: >-
+      {% set p = 'media_player.music_player_daemon' %}
+      {% if state_attr(p, 'media_title') %}Playing {{ state_attr(p, 'media_title') }}.
+      {% else %}The office speaker's queue is empty. Add something in MPD first.{% endif %}
+JarvisTv:
+  action:
+    - action: "media_player.turn_{{ tvpower }}"
+      target:
+        entity_id: "{{ tvroom }}"
+  speech:
+    text: "Turned {{ tvpower }} the {{ 'bedroom' if 'bedroom' in tvroom else 'living room' }} TV."

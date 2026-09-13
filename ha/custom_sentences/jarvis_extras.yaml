@@ -12,20 +12,15 @@ skip_words:
   - "hey jarvis"
   - "jarvis"
   - "please"
+expansion_rules:
+  pre: "[(can|could|would|will) you] [please]"
+  post: "[please] [now]"
 lists:
   # Parakeet often hears "volume" as "value" or "bound"; accept them all
   vol:
     values:
       - in: "(volume|volumes|value|values|bound|voice|loudness)"
         out: "volume"
-  pre:
-    values:
-      - in: "[(can|could|would|will) you] [please] [jarvis]"
-        out: ""
-  post:
-    values:
-      - in: "[please] [now] [jarvis]"
-        out: ""
   level:
     range:
       from: 0
@@ -40,6 +35,19 @@ lists:
       to: 24
   task:
     wildcard: true
+  # Parakeet writes "TV" as "T V"; hassil will not match that against an alias, so map it here
+  tvroom:
+    values:
+      - in: "bedroom"
+        out: "media_player.bedroom_tv"
+      - in: "living room"
+        out: "media_player.living_room_tv"
+  tvpower:
+    values:
+      - in: "on"
+        out: "on"
+      - in: "off"
+        out: "off"
 intents:
   JarvisWhatHeard:
     data:
@@ -59,30 +67,30 @@ intents:
   JarvisVolumeUp:
     data:
       - sentences:
-          - "{pre} [a (bit|little)] louder {post}"
-          - "{pre} speak (up|louder) {post}"
-          - "{pre} (turn|bring) (yourself|your volume|your voice) up [a (bit|little)] {post}"
-          - "{pre} (raise|increase|boost) your {vol} [a (bit|little)] {post}"
-          - "{pre} [your] {vol} up {post}"
+          - "<pre> [a (bit|little)] louder <post>"
+          - "<pre> speak (up|louder) <post>"
+          - "<pre> (turn|bring) (yourself|your volume|your voice) up [a (bit|little)] <post>"
+          - "<pre> (raise|increase|boost) your {vol} [a (bit|little)] <post>"
+          - "<pre> [your] {vol} up <post>"
           - "I can't hear you"
           - "(you're|you are) [being] too quiet"
   JarvisVolumeDown:
     data:
       - sentences:
-          - "{pre} [a (bit|little)] (quieter|softer) {post}"
-          - "{pre} not so loud {post}"
-          - "{pre} (turn|bring) (yourself|your volume|your voice) down [a (bit|little)] {post}"
-          - "{pre} (lower|reduce|decrease|drop) your {vol} [a (bit|little) [bit]] {post}"
-          - "{pre} [your] {vol} down {post}"
-          - "{pre} keep it down {post}"
+          - "<pre> [a (bit|little)] (quieter|softer) <post>"
+          - "<pre> not so loud <post>"
+          - "<pre> (turn|bring) (yourself|your volume|your voice) down [a (bit|little)] <post>"
+          - "<pre> (lower|reduce|decrease|drop) your {vol} [a (bit|little) [bit]] <post>"
+          - "<pre> [your] {vol} down <post>"
+          - "<pre> keep it down <post>"
           - "(you're|you are) [being] too loud"
-          - "{pre} speak (quieter|softer|more quietly) {post}"
+          - "<pre> speak (quieter|softer|more quietly) <post>"
   JarvisVolumeSet:
     data:
       - sentences:
-          - "{pre} set your {vol} to {level} [percent] {post}"
-          - "{pre} [put] your {vol} (at|to) {level} [percent] {post}"
-          - "{pre} speak at {level} percent {post}"
+          - "<pre> set your {vol} to {level} [percent] <post>"
+          - "<pre> [put] your {vol} (at|to) {level} [percent] <post>"
+          - "<pre> speak at {level} percent <post>"
   JarvisVolumeGet:
     data:
       - sentences:
@@ -114,3 +122,9 @@ intents:
           - "(play|start|resume) [some|the] music"
           - "put [some] music on"
           - "music on"
+  JarvisTv:
+    data:
+      - sentences:
+          - "turn {tvpower} [the] {tvroom} (t v|tee vee|t. v.)"
+          - "turn [the] {tvroom} (t v|tee vee|t. v.) {tvpower}"
+          - "(switch|power|shut) {tvpower} [the] {tvroom} (t v|tee vee|t. v.)"

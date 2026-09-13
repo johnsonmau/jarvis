@@ -305,3 +305,25 @@ soft two-note tick (`satellite/sounds/followup.wav`, `--follow-up-wav`, mic
 stays open) and the face shows a pulsing "LISTENING" pill at the top for as
 long as the satellite is listening (`face_listen_patch.py`). Volume phrases
 accept "value"/"bound", which is what Parakeet usually hears for "volume".
+
+## Names, aliases and the intent test hook (13 Sep, late)
+
+- **Aliases live in `aliases_v2`** in `.storage/core.entity_registry` on this
+  HA version (registry 1.22); the `aliases` key is legacy and ignored by
+  Assist. A `null` entry in `aliases_v2` stands for the entity's own name;
+  drop it and the name stops matching. `ha/ha_aliases3.py` is the script that
+  writes them (HA must be stopped while the file is edited).
+- **"multiple devices called office light"** came from "office light" being an
+  alias on BOTH office lights. `ha/ha_aliases_final.py` restores the original
+  alias lists with that one collision removed ("small office light" still
+  reaches the lamp).
+- **"T V"**: Parakeet spells TV as "T V" and hassil will not match that
+  against an alias, so `JarvisTv` in jarvis_extras.yaml handles
+  "turn off [the] bedroom t v" directly.
+- **Volume**: intent_script speech cannot see action variables, so the volume
+  handlers stash the reply in `input_text.jarvis_volume` and speak from it.
+- **Test any sentence without the mic**: POST to the local webhook
+  `jarvis-intent-test` (automation "Jarvis - intent test hook"):
+  `curl -X POST -H 'Content-Type: application/json' -d '{"text":"turn on the office light"}' http://192.168.0.229:8123/api/webhook/jarvis-intent-test`
+  The intent agent's reply lands in `input_text.jarvis_last_said` as "TEST: ...".
+  Add `"agent":"conversation.jarvis"` to the JSON to go through Ollama instead.
