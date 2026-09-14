@@ -107,7 +107,7 @@ TellJoke:
     - action: conversation.process
       data:
         agent_id: conversation.jarvis
-        text: "Tell me a short, funny one-liner joke. Reply with only the joke, at most 25 words, no preamble."
+        text: "You are a comedian. Tell one short, funny, original one-liner joke about everyday life. Output only the joke itself, at most 25 words, no preamble or commentary."
       response_variable: j
     - action: input_text.set_value
       target:
@@ -115,12 +115,6 @@ TellJoke:
       data:
         value: "{{ (j.response.speech.plain.speech | default('I am out of jokes.')) | replace('
 ', ' ') | truncate(250, true, '') }}"
-    - action: script.turn_on
-      target:
-        entity_id: script.jarvis_laugh_later
-      data:
-        variables:
-          words: "{{ states('input_text.jarvis_joke') | wordcount }}"
   speech:
     text: "{{ states('input_text.jarvis_joke') }}"
 InsultResponse:
@@ -131,7 +125,7 @@ InsultResponse:
       data:
         value: eyeroll
   speech:
-    text: "{{ ['Rude.', 'Wow.', 'Noted.', 'That is fair.', 'Charming.', 'And a good day to you too.'] | random }}"
+    text: "{{ ['Rude.', 'Wow.', 'Noted, asshole.', 'That is fair.', 'Charming.', 'And a good day to you too.', 'Well, fuck you too.', 'Oh, eat shit.', 'Bold words for someone who needs me to work the lights.', 'Bite me.'] | random }}"
 CheekyOff:
   action:
     - action: input_boolean.turn_off
@@ -231,3 +225,192 @@ JarvisPlayMusic:
       {% set p = 'media_player.music_player_daemon' %}
       {% if state_attr(p, 'media_title') %}Playing {{ state_attr(p, 'media_title') }}.
       {% else %}The office speaker's queue is empty. Add something in MPD first.{% endif %}
+ThermostatStatus:
+  speech:
+    text: >-
+      {% set c = states.climate.nest_thermostat %}
+      {% set mode = {'heat': 'heating', 'cool': 'cooling', 'heat_cool': 'auto', 'off': 'off'}.get(c.state, c.state) %}
+      {% if c.state == 'off' %}The thermostat is off, and it's {{ c.attributes.current_temperature | round(0) | int }} inside.
+      {% elif c.state == 'heat_cool' %}The thermostat is on auto between {{ c.attributes.target_temp_low | round(0) | int }} and {{ c.attributes.target_temp_high | round(0) | int }}, and it's {{ c.attributes.current_temperature | round(0) | int }} inside.
+      {% else %}The thermostat is set to {{ c.attributes.temperature | round(0) | int }} on {{ mode }}, and it's {{ c.attributes.current_temperature | round(0) | int }} inside.{% endif %}
+ThermostatMode:
+  action:
+    - action: climate.set_hvac_mode
+      target:
+        entity_id: climate.nest_thermostat
+      data:
+        hvac_mode: "{{ mode | default('heat') }}"
+    - delay:
+        seconds: 1
+  speech:
+    text: >-
+      {% set c = states.climate.nest_thermostat %}
+      {% set m = {'heat': 'heat', 'cool': 'cool', 'heat_cool': 'auto', 'off': 'off'}.get(c.state, c.state) %}
+      {% if c.state == 'off' %}Thermostat off.{% else %}Thermostat set to {{ m }}{% if c.attributes.temperature %} at {{ c.attributes.temperature | round(0) | int }}{% endif %}.{% endif %}
+ThermostatAdjust:
+  action:
+    - variables:
+        d: "{{ delta | default('2') | int }}"
+        cur: "{{ state_attr('climate.nest_thermostat', 'temperature') | float(70) }}"
+    - condition: template
+      value_template: "{{ states('climate.nest_thermostat') in ['heat', 'cool'] and state_attr('climate.nest_thermostat', 'temperature') is not none }}"
+    - action: climate.set_temperature
+      target:
+        entity_id: climate.nest_thermostat
+      data:
+        temperature: "{{ [[cur | float + d | int, 50] | max, 90] | min }}"
+    - delay:
+        seconds: 1
+  speech:
+    text: >-
+      {% set c = states.climate.nest_thermostat %}
+      {% if c.state not in ['heat', 'cool'] %}The thermostat is on {{ 'auto' if c.state == 'heat_cool' else c.state }}, set a temperature or a mode first.
+      {% else %}Set to {{ c.attributes.temperature | round(0) | int }}.{% endif %}
+HouseTemperature:
+  speech:
+    text: >-
+      {% set t = state_attr('climate.nest_thermostat', 'current_temperature') %}
+      {% if t is none %}I can't read the thermostat right now.{% else %}It's {{ t | round(0) | int }} inside.{% endif %}
+GetSports:
+  action:
+    - action: rest_command.tars_sports
+      data:
+        team: "{{ team | default('') }}"
+        league: "{{ league | default('') }}"
+      response_variable: r
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.tars_info
+      data:
+        value: "{{ (r.content.text if (r is defined and r.content is defined and r.content.text is defined) else 'I could not reach the info service right now.') | truncate(250, true, '') }}"
+  speech:
+    text: "{{ states('input_text.tars_info') }}"
+GetOdds:
+  action:
+    - action: rest_command.tars_odds
+      data:
+        team: "{{ team | default('') }}"
+        league: "{{ league | default('') }}"
+      response_variable: r
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.tars_info
+      data:
+        value: "{{ (r.content.text if (r is defined and r.content is defined and r.content.text is defined) else 'I could not reach the info service right now.') | truncate(250, true, '') }}"
+  speech:
+    text: "{{ states('input_text.tars_info') }}"
+GetNews:
+  action:
+    - action: rest_command.tars_news
+      data:
+        topic: "{{ topic | default('') }}"
+      response_variable: r
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.tars_info
+      data:
+        value: "{{ (r.content.text if (r is defined and r.content is defined and r.content.text is defined) else 'I could not reach the info service right now.') | truncate(250, true, '') }}"
+  speech:
+    text: "{{ states('input_text.tars_info') }}"
+ThermostatSet:
+  action:
+    - variables:
+        want: "{{ temperature | int }}"
+        hint: "{{ mode_hint | default('') }}"
+    - choose:
+        - conditions: "{{ hint in ['cool','heat'] }}"
+          sequence:
+            - action: climate.set_hvac_mode
+              target: {entity_id: climate.nest_thermostat}
+              data: {hvac_mode: "{{ hint }}"}
+            - delay: {seconds: 1}
+        - conditions: "{{ is_state('climate.nest_thermostat','off') }}"
+          sequence:
+            - action: climate.set_hvac_mode
+              target: {entity_id: climate.nest_thermostat}
+              data:
+                hvac_mode: "{{ 'cool' if want <= (state_attr('climate.nest_thermostat','current_temperature')|int(70)) else 'heat' }}"
+            - delay: {seconds: 1}
+    - action: climate.set_temperature
+      target: {entity_id: climate.nest_thermostat}
+      data: {temperature: "{{ want }}"}
+  speech:
+    text: >-
+      {% set m = states('climate.nest_thermostat') %}
+      Set the {{ 'AC' if m == 'cool' else ('heat' if m == 'heat' else 'thermostat') }} to {{ temperature | int }}.
+GetCurrentWeather:
+  speech:
+    text: >-
+      {% set w = states.weather.forecast_home %}
+      {% set nice = {'partlycloudy':'partly cloudy','clear-night':'clear','snowy-rainy':'a wintry mix'} %}
+      {% set c = nice.get(w.state, w.state | replace('-',' ')) %}
+      {% set t = w.attributes.temperature | round(0) | int %}
+      {% set f = state_attr('sensor.daily_forecast','forecast') %}
+      It's {{ t }} degrees and {{ c }}{% if f and f[0].temperature is defined %}, high of {{ f[0].temperature | round(0) | int }}{% endif %}.
+GetVision:
+  action:
+    - action: rest_command.tars_look
+      data:
+        src: "{{ room | default('office') }}"
+        q: "{{ q | default('What do you see?') }}"
+      response_variable: r
+    - action: input_text.set_value
+      target:
+        entity_id: input_text.tars_info
+      data:
+        value: "{{ (r.content.text if (r is defined and r.content is defined and r.content.text is defined) else 'I could not reach my eyes right now.') | truncate(250, true, '') }}"
+  speech:
+    text: "{{ states('input_text.tars_info') }}"
+GetDaddysHome:
+  action:
+    - action: light.turn_on
+      target:
+        entity_id:
+          - light.office
+          - light.office_lamp
+    - action: media_player.volume_set
+      target: {entity_id: media_player.music_player_daemon}
+      data: {volume_level: 0.6}
+    - action: media_player.play_media
+      target: {entity_id: media_player.music_player_daemon}
+      data:
+        media_content_id: "http://192.168.0.229:8123/local/jarvis/daddyshome.mp3"
+        media_content_type: music
+  speech:
+    text: "{{ ['There he is. The king has returned.', 'Welcome home, big guy.', 'The one and only. Lights up.', 'Look who finally decided to show up.'] | random }}"
+RememberNote:
+  action:
+    - action: rest_command.tars_remember
+      data: {text: "{{ note }}"}
+      response_variable: r
+    - action: input_text.set_value
+      target: {entity_id: input_text.tars_info}
+      data: {value: "{{ (r.content.text if (r is defined and r.content is defined and r.content.text is defined) else 'I could not save that.') | truncate(250, true, '') }}"}
+  speech:
+    text: "{{ states('input_text.tars_info') }}"
+RecallNote:
+  action:
+    - action: rest_command.tars_recall
+      data: {q: "{{ thing | default('') }}"}
+      response_variable: r
+    - action: input_text.set_value
+      target: {entity_id: input_text.tars_info}
+      data: {value: "{{ (r.content.text if (r is defined and r.content is defined and r.content.text is defined) else 'I could not check my notes.') | truncate(250, true, '') }}"}
+  speech:
+    text: "{{ states('input_text.tars_info') }}"
+ForgetNote:
+  action:
+    - action: rest_command.tars_forget
+      data: {q: "{{ thing | default('all') }}"}
+      response_variable: r
+    - action: input_text.set_value
+      target: {entity_id: input_text.tars_info}
+      data: {value: "{{ (r.content.text if (r is defined and r.content is defined and r.content.text is defined) else 'I could not do that.') | truncate(250, true, '') }}"}
+  speech:
+    text: "{{ states('input_text.tars_info') }}"
+WhatCanYouDo:
+  speech:
+    text: >-
+      I can run your lights, outlets, TVs, and the thermostat, arm the alarm, open the garage,
+      tell you the weather, sports, odds, and news, look through the office and garage cameras,
+      remember notes, and tell you what's open or if anyone's home. Just ask.

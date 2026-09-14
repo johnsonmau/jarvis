@@ -15,8 +15,15 @@ intents:
   GetForecast:
     data:
       - sentences:
-          - "(what's|what is|how's|how is) the (weather|forecast) [going to be] [(for|on)] {forecast_day:day}"
-          - "(what's|what is) the (weather|forecast) [going to be] like {forecast_day:day}"
+          - "(what's|whats|what is|how's|hows|how is) the (weather|forecast) [going to be] [(for|on)] {forecast_day:day}"
+          - "(what's|whats|what is) the (weather|forecast) [going to be] like {forecast_day:day}"
           - "(will|is) it [going to] (rain|snow|be nice|be cold|be hot|be warm) {forecast_day:day}"
           - "(do|will) I need (an umbrella|a jacket|a coat) {forecast_day:day}"
-          - "(what's|what is) the forecast"
+          - "(what's|whats|what is) the forecast"
+  GetCurrentWeather:
+    data:
+      - sentences:
+          - "(what's|whats|what is|hows|how is|how's|hows) the weather [(right now|now|today|outside|out|like)]"
+          - "(what's|whats|what is) it like outside"
+          - "(is it|will it be) (hot|cold|warm|nice|chilly|raining|snowing) [outside] [today]"
+          - "weather [report]"

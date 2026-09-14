@@ -6,13 +6,13 @@ intents:
   GetAreaTemperature:
     data:
       - sentences:
-          - "(what's|what is|how warm is|how cold is|how hot is) [the] temperature (in|of) [the] {area}"
-          - "(what's|what is) [the] temp (in|of) [the] {area}"
+          - "(what's|whats|what is|how warm is|how cold is|how hot is) [the] temperature (in|of) [the] {area}"
+          - "(what's|whats|what is) [the] temp (in|of) [the] {area}"
           - "how (warm|cold|hot) is [it in] [the] {area}"
-          - "(what's|what is) [the] {area} temperature"
+          - "(what's|whats|what is) [the] {area} temperature"
       - sentences:
-          - "(what's|what is) [the] temperature outside"
+          - "(what's|whats|what is) [the] temperature outside"
           - "how (warm|cold|hot) is it outside"
-          - "(what's|what is) it like outside"
+          - "(what's|whats|what is) it like outside"
         slots:
           area: "outside"

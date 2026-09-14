@@ -1,0 +1,13 @@
+# "Daddy's home" entrance: office lights on + fanfare + a cheeky greeting.
+# Handler GetDaddysHome in intent_scripts.yaml.
+language: "en"
+intents:
+  GetDaddysHome:
+    data:
+      - sentences:
+          - "(daddy's|daddys|daddies|papa's|papas|dad's|dads) home"
+          - "dad is home"
+          - "(the man of the house|the boss) is (home|back)"
+          - "the king is (home|back)"
+          - "(your|the) (favorite|favourite) person is (home|here|back)"
+          - "guess who's (home|back)"

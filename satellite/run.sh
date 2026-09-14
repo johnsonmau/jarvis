@@ -13,9 +13,9 @@ docker run -d --name wyoming-satellite --restart unless-stopped --network voice_
   voice_satellite \
   --name usb-mic \
   --mic-command "arecord -D ${MIC_DEVICE:-plughw:CARD=Microphone,DEV=0} -r 16000 -c 1 -f S16_LE -t raw" \
-  --mic-auto-gain 5 --mic-noise-suppression 2 \
-  --wake-uri tcp://openwakeword:10400 --wake-word-name hey_jarvis \
-  --snd-command "paplay --server=tcp:192.168.0.229:4713 --raw --rate=22050 --format=s16le --channels=1" \
+  --mic-auto-gain 13 --mic-noise-suppression 2 \
+  --wake-uri tcp://openwakeword:10400 --wake-word-name hey_tars --wake-word-name tars --wake-word-name hey_jarvis \
+  --snd-command /app/play.sh \
   --done-wav /app/sounds/done.wav --timer-finished-wav /app/sounds/timer_finished.wav --timer-finished-wav-repeat 3 2 --snd-volume-multiplier 0.2 \
   --debug
 docker logs --tail 3 wyoming-satellite

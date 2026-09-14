@@ -1,0 +1,32 @@
+# TARS's eyes: describe a camera view (vision service :8150). Handler GetVision
+# in intent_scripts.yaml speaks the returned description verbatim.
+language: "en"
+lists:
+  room:
+    values:
+      - in: "(office|study|den)"
+        out: "office"
+      - in: "(garage)"
+        out: "garage"
+intents:
+  GetVision:
+    data:
+      - sentences:
+          - "(can you see|look at|check|what's at|whats at|who's at|whos at|anyone at) [the] front (door|porch)"
+        slots:
+          room: front
+      - sentences:
+          - "(what|what's|whats) (do|can) you see [in the {room}]"
+          - "(what|what's|whats) (is|are) [in|on] (the {room}|there|screen|camera)"
+          - "look [in|at] [the] {room}"
+          - "(check|look at) the {room} [camera]"
+          - "describe [the|what you see in the] {room}"
+          - "use your eyes"
+          - "(what|what's|whats) going on in the {room}"
+      - sentences:
+          - "(is|are) (anyone|someone|somebody|people|anybody) (in|at) [the] {room}"
+          - "(who's|whos|who is) (in|at) [the] {room}"
+          - "(can|do) you see (anyone|anybody|someone|people) [in the {room}]"
+          - "is the {room} empty"
+        slots:
+          q: "Is anyone there? Answer yes or no and who."

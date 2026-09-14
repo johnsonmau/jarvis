@@ -52,7 +52,10 @@ services:
     image: rhasspy/wyoming-openwakeword
     container_name: wyoming-openwakeword
     # threshold/trigger-level raised from 0.5/1 to cut false wakes on room chatter.
-    command: --preload-model hey_jarvis --threshold 0.6 --trigger-level 2
+    # TARS is a community model from fwartner/home-assistant-wakewords-collection (./openwakeword).
+    command: --preload-model hey_jarvis --preload-model tars --preload-model hey_tars --custom-model-dir /custom --threshold 0.35 --trigger-level 1
+    volumes:
+      - ./openwakeword:/custom
     ports:
       - "10400:10400"
     restart: unless-stopped
@@ -83,6 +86,9 @@ services:
       - openwakeword
     environment:
       REPLY_WEBHOOK: http://192.168.0.229:8123/api/webhook/t5ai_reply
+      FOLLOW_UP_MAX_ROUNDS: "2"     # follow-up windows per wake word before it needs the wake word again
+      # Voice treatment applied by satellite/play.sh (ffmpeg filter chain). Empty = plain.
+      TARS_FILTER: "asetrate=22050*0.95,aresample=22050,atempo=1.0526,highpass=f=120,lowpass=f=6500,equalizer=f=1700:t=q:w=1.4:g=3.5,aecho=0.9:0.32:10:0.22,acompressor=threshold=-18dB:ratio=3:attack=4:release=90,volume=1.0"
     # Output volume is no longer fixed here: satellite/snd.sh reads the level that
     # jarvis-ctl (below) writes, so "Jarvis, louder" works. MPD/alarms are untouched.
     # To record every command to satellite/debug for tuning, add this line to the
@@ -90,10 +96,10 @@ services:
     command: >
       --name usb-mic
       --mic-command "arecord -D ${MIC_DEVICE:-plughw:CARD=Microphone,DEV=0} -r 16000 -c 1 -f S16_LE -t raw"
-      --mic-auto-gain 5 --mic-noise-suppression 2
-      --wake-uri tcp://openwakeword:10400 --wake-word-name hey_jarvis
-      --follow-up-seconds 8 --follow-up-wav /app/sounds/followup.wav
-      --snd-command "/app/snd.sh"
+      --mic-auto-gain 13 --mic-noise-suppression 2
+      --wake-uri tcp://openwakeword:10400 --wake-word-name hey_tars --wake-word-name tars --wake-word-name hey_jarvis
+      --follow-up-seconds 5 --follow-up-wav /app/sounds/followup.wav
+      --snd-command /app/play.sh
       --done-wav /app/sounds/done.wav --timer-finished-wav /app/sounds/timer_finished.wav --timer-finished-wav-repeat 3 2
       --debug
     restart: unless-stopped

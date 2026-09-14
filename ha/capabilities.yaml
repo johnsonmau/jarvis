@@ -1,0 +1,10 @@
+language: "en"
+intents:
+  WhatCanYouDo:
+    data:
+      - sentences:
+          - "what can you do"
+          - "what (are you able to|can you) do"
+          - "(what|which) (commands|things) (can i say|do you (know|understand|do))"
+          - "help [me]"
+          - "what are your (features|abilities|capabilities|skills)"

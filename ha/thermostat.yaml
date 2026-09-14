@@ -1,0 +1,96 @@
+# Nest thermostat (Matter, climate.nest_thermostat). The built-in intents already
+# cover "set the thermostat to 70" and "what's the inside temperature"; these add
+# mode changes, nudges, and the set point. Handlers in intent_scripts.yaml.
+language: "en"
+lists:
+  temp:
+    range:
+      from: 50
+      to: 90
+  hvac_mode:
+    values:
+      - in: "(heat|heating|warm)"
+        out: "heat"
+      - in: "(cool|cooling|ac|a c|air conditioning|air conditioner)"
+        out: "cool"
+      - in: "(auto|automatic|heat and cool)"
+        out: "heat_cool"
+      - in: "off"
+        out: "off"
+  nudge:
+    values:
+      - in: "(up|warmer|higher|hotter)"
+        out: "2"
+      - in: "(down|cooler|lower|colder)"
+        out: "-2"
+intents:
+  ThermostatStatus:
+    data:
+      - sentences:
+          - "(what's|whats|what is) the (thermostat|heat|ac|air conditioning) (set to|set at|on)"
+          - "(what's|whats|what is) the (thermostat|nest) (setting|set point|status)"
+          - "(what's|whats|what is) the (target|set) temperature"
+          - "is the (heat|ac|air conditioning|thermostat) on"
+  ThermostatMode:
+    data:
+      - sentences:
+          - "(set|switch|turn|put) the (thermostat|nest|system) [(to|on)] {hvac_mode:mode} [mode]"
+          - "(thermostat|nest) [to] {hvac_mode:mode} [mode]"
+      - sentences:
+          - "turn on the (heat|heating)"
+          - "turn the (heat|heating) on"
+        slots:
+          mode: "heat"
+      - sentences:
+          - "turn on the (ac|a c|a.c.|air conditioning|air conditioner|cooling)"
+          - "turn the (ac|a c|a.c.|air conditioning|air conditioner|cooling) on"
+        slots:
+          mode: "cool"
+      - sentences:
+          - "turn off the (heat|heating|ac|air conditioning|air conditioner|thermostat|nest)"
+          - "turn the (heat|heating|ac|air conditioning|air conditioner|thermostat|nest) off"
+        slots:
+          mode: "off"
+  ThermostatAdjust:
+    data:
+      - sentences:
+          - "turn (the|it) (thermostat|heat|temperature|ac|air conditioning) {nudge:delta}"
+          - "(make|turn) it [a (little|bit)] {nudge:delta} [in here]"
+          - "(bump|nudge) the (thermostat|heat|temperature) {nudge:delta}"
+      - sentences:
+          - "(it's|it is) [too] (cold|chilly|freezing) [in here]"
+        slots:
+          delta: "2"
+      - sentences:
+          - "(it's|it is) [too] (hot|warm|boiling|stuffy) [in here]"
+        slots:
+          delta: "-2"
+  HouseTemperature:
+    data:
+      - sentences:
+          - "(what's|whats|what is) the temperature [(inside|in here|in the house|indoors|right now)]"
+          - "how (warm|cold|hot) is it [(inside|in here|in the house|indoors|right now)]"
+          - "(what's|whats|what is) it like in (here|the house)"
+  ThermostatSet:
+    data:
+      - sentences:
+          - "(set|put|change|make) [the] (thermostat|temperature|temp|heat|it) to {temp:temperature} [degrees]"
+          - "(set|make) it {temp:temperature} [degrees] [in here]"
+      - sentences:
+          - "(set|put|turn) [the] (ac|a c|a.c.|air conditioning|air conditioner|cooling) [on] to {temp:temperature} [degrees]"
+          - "turn (the ac|the air conditioning|the air conditioner) on [to] {temp:temperature} [degrees]"
+          - "cool [it] [down] to {temp:temperature} [degrees]"
+          - "set [the] (cool|cooling) to {temp:temperature} [degrees]"
+          - "[i] (need|want) [the] (cool|cooling|ac|a c|air conditioning) [to be|to] {temp:temperature} [degrees]"
+          - "make [the] (cool|cooling|ac) {temp:temperature} [degrees]"
+        slots:
+          mode_hint: cool
+      - sentences:
+          - "(set|put|turn) [the] (heat|heating|heater) [on] to {temp:temperature} [degrees]"
+          - "turn (the heat|the heater) on [to] {temp:temperature} [degrees]"
+          - "heat [it] [up] to {temp:temperature} [degrees]"
+          - "set [the] (heat|heating) to {temp:temperature} [degrees]"
+          - "[i] (need|want) [the] (heat|heating) [to be|to] {temp:temperature} [degrees]"
+          - "make [the] (heat|heating) {temp:temperature} [degrees]"
+        slots:
+          mode_hint: heat

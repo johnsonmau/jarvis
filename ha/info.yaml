@@ -1,0 +1,67 @@
+# Deterministic phrasings for live info: they call the infobot rest_commands and
+# speak the returned text verbatim (no LLM paraphrasing, so news/scores are exact).
+# Handlers: GetSports / GetOdds / GetNews in intent_scripts.yaml.
+language: "en"
+lists:
+  team:
+    wildcard: true
+  topic:
+    wildcard: true
+intents:
+  GetSports:
+    data:
+      - sentences:
+          - "(what's|whats|what is) the score (of|on|for) (that|the|this) game"
+          - "(what's|whats) the score"
+      - sentences:
+          - "(what|which) (games|sports|matches) are (on|today|playing) [today]"
+          - "(what's|whats|what is) (on|happening) in sports [today]"
+          - "any (games|sports) (on|today)"
+          - "what games are (on|today)"
+          - "what games are today"
+          - "(what|which) (games|sports) [are] [on] (today|tonight)"
+          - "any games (on|today|tonight)"
+          - "(what's|whats) going on in sports"
+      - sentences:
+          - "(what's|whats|what is) the score (of|for|on) [the] {team} game"
+          - "(what's|whats|what is) the {team} score"
+          - "(did|how did) the {team} (win|lose|do|play)"
+          - "who won the {team} game"
+          - "are the {team} (playing|winning|losing) [today]"
+          - "sports scores"
+          - "(what are|whats|what is) the scores"
+          - "(any|are there any) games [on] (today|tonight)"
+          - "(who is|whos|who's) playing [today|tonight]"
+          - "is there a game [on] [today|tonight]"
+          - "score(s) [update]"
+  GetOdds:
+    data:
+      - sentences:
+          - "(what are|what's|whats|what is) the (odds|line|spread) [on|for] (that|the|this|it) [game]"
+          - "(what are|what's|whats) the (odds|line|spread) [on] that game"
+          - "and the (odds|line|spread)"
+          - "odds on (it|that|the game)"
+      - sentences:
+          - "(what are|what's|whats|what is|whats) the (odds|line|spread|lines|spreads) [(on|for)] [the] {team} [game]"
+          - "(what are|what's|whats|what is|whats) the (odds|lines|spreads) [today]"
+          - "(gambling|betting) odds [for {team}] [today]"
+          - "(what's|whats|what is) the over under [(on|for) {team}]"
+          - "odds"
+          - "(the )?(lines|spreads)"
+          - "betting (odds|lines)"
+  GetNews:
+    data:
+      - sentences:
+          - "(what's|whats|what is) the [top] news [today]"
+          - "(what's|whats|what is) (going on|happening) in the (news|world) [today]"
+          - "(give me|read me) the [top] (news|headlines)"
+          - "top headlines"
+          - "(what's|whats|what is) (going on|happening) in the world [(today|right now|lately)]"
+          - "catch me up [on the news]"
+          - "(give me|any) [a] news update"
+          - "news update"
+          - "any news [(about|on) {topic}]"
+          - "what's the news (about|on) {topic}"
+          - "news"
+          - "headlines"
+          - "(what is|whats|what's) happening"

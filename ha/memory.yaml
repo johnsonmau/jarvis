@@ -1,0 +1,29 @@
+language: "en"
+lists:
+  note:
+    wildcard: true
+  thing:
+    wildcard: true
+intents:
+  RememberNote:
+    data:
+      - sentences:
+          - "remember (that|to) {note}"
+          - "remember {note}"
+          - "(make|take) a note (that|to|of) {note}"
+          - "note that {note}"
+          - "(don't|do not) let me forget (that|to|about) {note}"
+  RecallNote:
+    data:
+      - sentences:
+          - "where (is|are|did i put|do i keep) {thing}"
+          - "do you remember (where|what|that|about) {thing}"
+          - "remind me (about|where|what) {thing}"
+          - "what did i (ask you to remember|tell you to remember|tell you|want to remember)"
+          - "what do you remember"
+  ForgetNote:
+    data:
+      - sentences:
+          - "forget (about) {thing}"
+          - "forget (everything|all your notes|it all)"
+          - "clear (your notes|all notes|your memory)"
